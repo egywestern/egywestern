@@ -14,20 +14,23 @@ export async function POST(request: Request) {
       { error: "Product name is required" },
       { status: 400 },
     );
-  const [product] = await getDb()
-    .insert(products)
-    .values({
-      name: String(body.name),
-      category: String(body.category),
-      collection: String(body.collection || "NEW DROPS"),
-      price: Number(body.price),
-      stock: Number(body.stock),
-      image: String(body.image || ""),
-      sizes: String(body.sizes || ""),
-      colors: String(body.colors || ""),
-      description: String(body.description || ""),
-    })
-    .returning();
+  const db = getDb();
+  await db.insert(products).values({
+    name: String(body.name),
+    category: String(body.category),
+    collection: String(body.collection || "NEW DROPS"),
+    price: Number(body.price),
+    stock: Number(body.stock),
+    image: String(body.image || ""),
+    sizes: String(body.sizes || ""),
+    colors: String(body.colors || ""),
+    description: String(body.description || ""),
+  });
+  const [product] = await db
+    .select()
+    .from(products)
+    .orderBy(desc(products.id))
+    .limit(1);
   return Response.json({ product }, { status: 201 });
 }
 

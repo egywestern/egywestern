@@ -24,7 +24,13 @@ export async function POST(request: Request) {
       { status: 400 },
     );
   const table = body.type === "category" ? categories : collections;
-  const [item] = await getDb().insert(table).values({ name }).returning();
+  const db = getDb();
+  await db.insert(table).values({ name });
+  const [item] = await db
+    .select()
+    .from(table)
+    .orderBy(asc(table.id))
+    .then((rows) => rows.slice(-1));
   return Response.json({ item }, { status: 201 });
 }
 export async function DELETE(request: Request) {
