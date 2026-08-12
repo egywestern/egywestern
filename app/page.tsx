@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 type Product = {
   id: number;
@@ -839,10 +839,27 @@ function Admin() {
         price: string;
         stock: string;
         image: string;
+        id?: number;
       }[]
     >([]),
     [savedNotice, setSavedNotice] = useState(false),
     [imagePreview, setImagePreview] = useState("");
+  useEffect(() => {
+    fetch("/api/products")
+      .then((r) => (r.ok ? r.json() : { products: [] }))
+      .then((data) =>
+        setSaved(
+          data.products.map(
+            (p: SavedProduct & { price: number; stock: number }) => ({
+              ...p,
+              price: String(p.price),
+              stock: String(p.stock),
+            }),
+          ),
+        ),
+      )
+      .catch(() => {});
+  }, []);
   const closeForm = () => {
     setShowForm(false);
     setImagePreview("");
@@ -859,16 +876,46 @@ function Admin() {
     reader.onload = () => setImagePreview(String(reader.result));
     reader.readAsDataURL(file);
   };
-  const submit = (e: React.FormEvent<HTMLFormElement>) => {
+  const submit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const data = new FormData(e.currentTarget);
+    const upload = new FormData();
+    upload.set("file", data.get("image") as File);
+    const uploadResponse = await fetch("/api/uploads", {
+      method: "POST",
+      body: upload,
+    });
+    if (!uploadResponse.ok) {
+      alert("Image upload failed. Please try again.");
+      return;
+    }
+    const { url } = await uploadResponse.json();
+    const payload = {
+      name: String(data.get("name")),
+      category: String(data.get("category")),
+      collection: String(data.get("collection")),
+      price: Number(data.get("price")),
+      stock: Number(data.get("stock")),
+      image: url,
+      sizes: String(data.get("sizes")),
+      colors: String(data.get("colors")),
+      description: String(data.get("description")),
+    };
+    const response = await fetch("/api/products", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) {
+      alert("Product could not be saved.");
+      return;
+    }
+    const { product } = await response.json();
     setSaved([
       {
-        name: String(data.get("name")),
-        category: String(data.get("category")),
-        price: String(data.get("price")),
-        stock: String(data.get("stock")),
-        image: imagePreview,
+        ...product,
+        price: String(product.price),
+        stock: String(product.stock),
       },
       ...saved,
     ]);
@@ -1182,6 +1229,7 @@ function Admin() {
 }
 
 type SavedProduct = {
+  id?: number;
   name: string;
   category: string;
   price: string;
@@ -1203,37 +1251,51 @@ function AdminPanel({
   notify: () => void;
 }) {
   const action = () => notify();
-  const [collections, setCollections] = useState([
-    "NEW DROPS",
-    "SUMMER 26",
-    "WINTER COLLECTION",
-    "BEST SELLERS",
-    "LIMITED EDITION",
-  ]);
+  const [collections, setCollections] = useState<
+    { id?: number; name: string }[]
+  >([]);
   const [managedCollection, setManagedCollection] = useState<string | null>(
     null,
   );
-  const [categories, setCategories] = useState([
-    "T-SHIRTS",
-    "HOODIES",
-    "CARGOS",
-    "JACKETS",
-    "CAPS",
-    "ACCESSORIES",
-  ]);
+  const [categories, setCategories] = useState<{ id?: number; name: string }[]>(
+    [],
+  );
   const [newCategory, setNewCategory] = useState("");
-  const addCollection = () => {
+  useEffect(() => {
+    fetch("/api/catalog")
+      .then((r) => r.json())
+      .then((data) => {
+        setCollections(data.collections);
+        setCategories(data.categories);
+      })
+      .catch(() => {});
+  }, []);
+  const addCollection = async () => {
     const name = window.prompt("Collection name");
     if (name?.trim()) {
-      setCollections([...collections, name.trim().toUpperCase()]);
+      const response = await fetch("/api/catalog", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ type: "collection", name }),
+      });
+      if (!response.ok) return;
+      const { item } = await response.json();
+      setCollections([...collections, item]);
       notify();
     }
   };
-  const addCategory = (e: React.FormEvent) => {
+  const addCategory = async (e: React.FormEvent) => {
     e.preventDefault();
     const name = newCategory.trim().toUpperCase();
-    if (!name || categories.includes(name)) return;
-    setCategories([...categories, name]);
+    if (!name || categories.some((x) => x.name === name)) return;
+    const response = await fetch("/api/catalog", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ type: "category", name }),
+    });
+    if (!response.ok) return;
+    const { item } = await response.json();
+    setCategories([...categories, item]);
     setNewCategory("");
     notify();
   };
@@ -1288,9 +1350,14 @@ function AdminPanel({
                     {i < saved.length && (
                       <button
                         className="table-action danger"
-                        onClick={() =>
-                          setSaved(saved.filter((_, x) => x !== i))
-                        }
+                        onClick={async () => {
+                          if (p.id)
+                            await fetch(`/api/products?id=${p.id}`, {
+                              method: "DELETE",
+                            });
+                          setSaved(saved.filter((_, x) => x !== i));
+                          notify();
+                        }}
                       >
                         DELETE
                       </button>
@@ -1413,13 +1480,15 @@ function AdminPanel({
         <div className="panel-cards collections-admin">
           {collections.map((x, i) => (
             <article
-              key={x}
-              className={managedCollection === x ? "selected" : ""}
+              key={x.id ?? x.name}
+              className={managedCollection === x.name ? "selected" : ""}
             >
               <small>0{i + 1}</small>
-              <h3>{x}</h3>
+              <h3>{x.name}</h3>
               <p>{[8, 12, 10, 6, 4][i] ?? 0} PRODUCTS</p>
-              <button onClick={() => setManagedCollection(x)}>MANAGE →</button>
+              <button onClick={() => setManagedCollection(x.name)}>
+                MANAGE →
+              </button>
             </article>
           ))}
         </div>
@@ -1455,11 +1524,16 @@ function AdminPanel({
               </form>
               <div className="category-list">
                 {categories.map((category) => (
-                  <div key={category}>
-                    <span>{category}</span>
+                  <div key={category.id ?? category.name}>
+                    <span>{category.name}</span>
                     <button
-                      aria-label={`Delete ${category}`}
-                      onClick={() => {
+                      aria-label={`Delete ${category.name}`}
+                      onClick={async () => {
+                        if (category.id)
+                          await fetch(
+                            `/api/catalog?type=category&id=${category.id}`,
+                            { method: "DELETE" },
+                          );
                         setCategories(categories.filter((x) => x !== category));
                         notify();
                       }}
