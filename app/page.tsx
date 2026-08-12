@@ -90,13 +90,15 @@ export default function Cairo26App() {
     name: string;
     category: string;
     price: number;
+    salePrice?: number | null;
     image: string;
     colors?: string;
   }) => ({
     id: 100000 + p.id,
     name: p.name,
     cat: p.category,
-    price: Number(p.price),
+    price: p.salePrice ? Number(p.salePrice) : Number(p.price),
+    old: p.salePrice ? Number(p.price) : undefined,
     image: p.image,
     color: p.colors?.split(",")[0] || "Black",
     badge: "NEW",
@@ -105,7 +107,9 @@ export default function Cairo26App() {
     fetch("/api/products")
       .then((r) => r.json())
       .then((data) =>
-        setCatalog([...data.products.map(toStoreProduct), ...products]),
+        setCatalog(
+          data.products.length ? data.products.map(toStoreProduct) : products,
+        ),
       )
       .catch(() => {});
   }, []);
@@ -206,7 +210,15 @@ export default function Cairo26App() {
       {view === "checkout" && <Checkout />} {view === "account" && <Account />}{" "}
       {view === "admin" && (
         <Admin
-          onProductAdded={(p) => setCatalog([toStoreProduct(p), ...catalog])}
+          onProductAdded={(p) =>
+            setCatalog([
+              toStoreProduct(p),
+              ...catalog.filter((x) => x.id !== 100000 + p.id),
+            ])
+          }
+          onProductDeleted={(id) =>
+            setCatalog(catalog.filter((x) => x.id !== 100000 + id))
+          }
         />
       )}
       {!["admin", "account", "checkout"].includes(view) && <Footer go={go} />}{" "}
@@ -849,15 +861,18 @@ function Account() {
 
 function Admin({
   onProductAdded,
+  onProductDeleted,
 }: {
   onProductAdded: (product: {
     id: number;
     name: string;
     category: string;
     price: number;
+    salePrice?: number | null;
     image: string;
     colors?: string;
   }) => void;
+  onProductDeleted: (id: number) => void;
 }) {
   const adminTabs = [
     "OVERVIEW",
@@ -883,6 +898,7 @@ function Admin({
         category: string;
         price: string;
         stock: string;
+        salePrice?: string | null;
         image: string;
         id?: number;
       }[]
@@ -899,6 +915,7 @@ function Admin({
               ...p,
               price: String(p.price),
               stock: String(p.stock),
+              salePrice: p.salePrice ? String(p.salePrice) : null,
             }),
           ),
         ),
@@ -940,6 +957,7 @@ function Admin({
       category: String(data.get("category")),
       collection: String(data.get("collection")),
       price: Number(data.get("price")),
+      salePrice: data.get("salePrice") ? Number(data.get("salePrice")) : null,
       stock: Number(data.get("stock")),
       image: url,
       sizes: String(data.get("sizes")),
@@ -962,6 +980,7 @@ function Admin({
         ...product,
         price: String(product.price),
         stock: String(product.stock),
+        salePrice: product.salePrice ? String(product.salePrice) : null,
       },
       ...saved,
     ]);
@@ -1012,6 +1031,8 @@ function Admin({
               setSavedNotice(true);
               setTimeout(() => setSavedNotice(false), 2500);
             }}
+            onProductChanged={onProductAdded}
+            onProductDeleted={onProductDeleted}
           />
         )}
         <div className="metric-grid">
@@ -1116,7 +1137,7 @@ function Admin({
         <div className="orders">
           <div className="section-head">
             <h2>RECENT ORDERS</h2>
-            <button>VIEW ALL ORDERS →</button>
+            <button onClick={() => setTab("ORDERS")}>VIEW ALL ORDERS →</button>
           </div>
           <table>
             <thead>
@@ -1210,6 +1231,15 @@ function Admin({
                 </label>
               </div>
               <label>
+                SALE PRICE (EGP) — OPTIONAL
+                <input
+                  name="salePrice"
+                  type="number"
+                  min="1"
+                  placeholder="LEAVE EMPTY FOR NO SALE"
+                />
+              </label>
+              <label>
                 PRODUCT IMAGE
                 <div
                   className={
@@ -1279,6 +1309,7 @@ type SavedProduct = {
   name: string;
   category: string;
   price: string;
+  salePrice?: string | null;
   stock: string;
   image: string;
 };
@@ -1289,12 +1320,24 @@ function AdminPanel({
   setSaved,
   addProduct,
   notify,
+  onProductChanged,
+  onProductDeleted,
 }: {
   tab: string;
   saved: SavedProduct[];
   setSaved: (items: SavedProduct[]) => void;
   addProduct: () => void;
   notify: () => void;
+  onProductChanged: (product: {
+    id: number;
+    name: string;
+    category: string;
+    price: number;
+    salePrice?: number | null;
+    image: string;
+    colors?: string;
+  }) => void;
+  onProductDeleted: (id: number) => void;
 }) {
   const action = () => notify();
   const [collections, setCollections] = useState<
@@ -1345,13 +1388,53 @@ function AdminPanel({
     setNewCategory("");
     notify();
   };
+  const editProduct = async (product: SavedProduct) => {
+    if (!product.id) return;
+    const name = window.prompt("Product name", product.name);
+    if (!name) return;
+    const price = window.prompt("Regular price (EGP)", product.price);
+    if (!price) return;
+    const salePrice = window.prompt(
+      "Sale price (leave empty for no sale)",
+      product.salePrice || "",
+    );
+    const stock = window.prompt("Stock quantity", product.stock);
+    if (stock === null) return;
+    const response = await fetch("/api/products", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        ...product,
+        name,
+        price: Number(price),
+        salePrice: salePrice ? Number(salePrice) : null,
+        stock: Number(stock),
+      }),
+    });
+    if (!response.ok) return;
+    const { product: updated } = await response.json();
+    onProductChanged(updated);
+    setSaved(
+      saved.map((p) =>
+        p.id === updated.id
+          ? {
+              ...updated,
+              price: String(updated.price),
+              stock: String(updated.stock),
+              salePrice: updated.salePrice ? String(updated.salePrice) : null,
+            }
+          : p,
+      ),
+    );
+    notify();
+  };
   if (tab === "PRODUCTS")
     return (
       <div className="admin-panel">
         <div className="panel-toolbar">
           <div>
             <small>CATALOG MANAGEMENT</small>
-            <h2>ALL PRODUCTS ({products.length + saved.length})</h2>
+            <h2>ALL PRODUCTS ({saved.length})</h2>
           </div>
           <button className="dark-btn" onClick={addProduct}>
             + ADD PRODUCT
@@ -1364,21 +1447,13 @@ function AdminPanel({
                 <th>PRODUCT</th>
                 <th>CATEGORY</th>
                 <th>PRICE</th>
+                <th>SALE</th>
                 <th>STOCK</th>
                 <th>ACTIONS</th>
               </tr>
             </thead>
             <tbody>
-              {[
-                ...saved,
-                ...products.map((p) => ({
-                  name: p.name,
-                  category: p.cat,
-                  price: String(p.price),
-                  stock: "24",
-                  image: p.image,
-                })),
-              ].map((p, i) => (
+              {saved.map((p, i) => (
                 <tr key={p.name + i}>
                   <td>
                     <div className="saved-product">
@@ -1388,26 +1463,33 @@ function AdminPanel({
                   </td>
                   <td>{p.category}</td>
                   <td>{Number(p.price).toLocaleString("en-US")} EGP</td>
+                  <td>
+                    {p.salePrice
+                      ? `${Number(p.salePrice).toLocaleString("en-US")} EGP`
+                      : "—"}
+                  </td>
                   <td>{p.stock}</td>
                   <td>
-                    <button className="table-action" onClick={action}>
+                    <button
+                      className="table-action"
+                      onClick={() => editProduct(p)}
+                    >
                       EDIT
                     </button>
-                    {i < saved.length && (
-                      <button
-                        className="table-action danger"
-                        onClick={async () => {
-                          if (p.id)
-                            await fetch(`/api/products?id=${p.id}`, {
-                              method: "DELETE",
-                            });
-                          setSaved(saved.filter((_, x) => x !== i));
-                          notify();
-                        }}
-                      >
-                        DELETE
-                      </button>
-                    )}
+                    <button
+                      className="table-action danger"
+                      onClick={async () => {
+                        if (p.id)
+                          await fetch(`/api/products?id=${p.id}`, {
+                            method: "DELETE",
+                          });
+                        if (p.id) onProductDeleted(p.id);
+                        setSaved(saved.filter((_, x) => x !== i));
+                        notify();
+                      }}
+                    >
+                      DELETE
+                    </button>
                   </td>
                 </tr>
               ))}

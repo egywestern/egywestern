@@ -41,3 +41,5 @@ next-env.d.ts
 /outputs/
 /work/
 .devserver.*.log
+/cairo26-site*.tar.gz
+/wrangler.local.jsonc
