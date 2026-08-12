@@ -2,77 +2,1616 @@
 
 import { useMemo, useState } from "react";
 
-type Product = { id:number; name:string; cat:string; price:number; old?:number; image:string; badge?:string; color:string };
+type Product = {
+  id: number;
+  name: string;
+  cat: string;
+  price: number;
+  old?: number;
+  image: string;
+  badge?: string;
+  color: string;
+};
 
 const products: Product[] = [
-  {id:1,name:"Metro Line Heavy Tee",cat:"T-SHIRTS",price:890,image:"https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=1200&q=85",badge:"NEW",color:"Black"},
-  {id:2,name:"Downtown Box Hoodie",cat:"HOODIES",price:1890,old:2190,image:"https://images.unsplash.com/photo-1578681994506-b8f463449011?auto=format&fit=crop&w=1200&q=85",badge:"BEST SELLER",color:"Stone"},
-  {id:3,name:"26 Utility Cargo",cat:"CARGOS",price:1690,image:"https://images.unsplash.com/photo-1506629082955-511b1aa562c8?auto=format&fit=crop&w=1200&q=85",color:"Olive"},
-  {id:4,name:"Night Shift Jacket",cat:"JACKETS",price:2490,image:"https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&w=1200&q=85",badge:"LIMITED",color:"Black"},
-  {id:5,name:"Cairo Stamp Cap",cat:"ACCESSORIES",price:590,image:"https://images.unsplash.com/photo-1521369909029-2afed882baee?auto=format&fit=crop&w=1200&q=85",color:"Beige"},
-  {id:6,name:"Kasr El Nil Tee",cat:"T-SHIRTS",price:790,image:"https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=1200&q=85",color:"White"},
+  {
+    id: 1,
+    name: "Metro Line Heavy Tee",
+    cat: "T-SHIRTS",
+    price: 890,
+    image:
+      "https://images.unsplash.com/photo-1529139574466-a303027c1d8b?auto=format&fit=crop&w=1200&q=85",
+    badge: "NEW",
+    color: "Black",
+  },
+  {
+    id: 2,
+    name: "Downtown Box Hoodie",
+    cat: "HOODIES",
+    price: 1890,
+    old: 2190,
+    image:
+      "https://images.unsplash.com/photo-1578681994506-b8f463449011?auto=format&fit=crop&w=1200&q=85",
+    badge: "BEST SELLER",
+    color: "Stone",
+  },
+  {
+    id: 3,
+    name: "26 Utility Cargo",
+    cat: "CARGOS",
+    price: 1690,
+    image:
+      "https://images.unsplash.com/photo-1506629082955-511b1aa562c8?auto=format&fit=crop&w=1200&q=85",
+    color: "Olive",
+  },
+  {
+    id: 4,
+    name: "Night Shift Jacket",
+    cat: "JACKETS",
+    price: 2490,
+    image:
+      "https://images.unsplash.com/photo-1551488831-00ddcb6c6bd3?auto=format&fit=crop&w=1200&q=85",
+    badge: "LIMITED",
+    color: "Black",
+  },
+  {
+    id: 5,
+    name: "Cairo Stamp Cap",
+    cat: "ACCESSORIES",
+    price: 590,
+    image:
+      "https://images.unsplash.com/photo-1521369909029-2afed882baee?auto=format&fit=crop&w=1200&q=85",
+    color: "Beige",
+  },
+  {
+    id: 6,
+    name: "Kasr El Nil Tee",
+    cat: "T-SHIRTS",
+    price: 790,
+    image:
+      "https://images.unsplash.com/photo-1503342217505-b0a15ec3261c?auto=format&fit=crop&w=1200&q=85",
+    color: "White",
+  },
 ];
 
-const icons = {search:"⌕", bag:"▱", heart:"♡", user:"○"};
+const icons = { search: "⌕", bag: "▱", heart: "♡", user: "○" };
 
-export default function Cairo26App(){
- const [view,setView]=useState("home"), [cart,setCart]=useState<number[]>([2]), [wish,setWish]=useState<number[]>([]), [menu,setMenu]=useState(false), [category,setCategory]=useState("ALL"), [selected,setSelected]=useState<Product|null>(null), [toast,setToast]=useState("");
- const notify=(s:string)=>{setToast(s);setTimeout(()=>setToast(""),2200)};
- const add=(id:number)=>{setCart([...cart,id]);notify("Added to your bag")};
- const filtered=useMemo(()=>category==="ALL"?products:products.filter(p=>p.cat===category),[category]);
- const go=(v:string)=>{setView(v);setMenu(false);window.scrollTo({top:0,behavior:"smooth"})};
- const nav=["SHOP","COLLECTIONS","LOOKBOOK","ABOUT"];
- return <main>
-   <div className="ticker">FREE DELIVERY OVER 2,500 EGP <span>•</span> DESIGNED IN CAIRO <span>•</span> EASY 14-DAY EXCHANGES</div>
-   <header>
-    <button className="hamb" onClick={()=>setMenu(!menu)}>☰</button><button className="brand" onClick={()=>go("home")}>CAIRO<span>26</span></button>
-    <nav className={menu?"open":""}>{nav.map(n=><button key={n} onClick={()=>go(n.toLowerCase())}>{n}</button>)}<button onClick={()=>go("admin")}>ADMIN</button></nav>
-    <div className="actions"><button aria-label="Search">{icons.search}</button><button onClick={()=>go("wishlist")} aria-label="Wishlist">{icons.heart}<i>{wish.length}</i></button><button onClick={()=>go("account")} aria-label="Account">{icons.user}</button><button onClick={()=>go("cart")} aria-label="Cart">{icons.bag}<i>{cart.length}</i></button></div>
-   </header>
-   {view==="home"&&<Home go={go} open={p=>{setSelected(p);go("product")}} add={add}/>} 
-   {view==="shop"&&<Shop items={filtered} category={category} setCategory={setCategory} open={p=>{setSelected(p);go("product")}}/>}
-   {view==="collections"&&<Collections go={go}/>} {view==="lookbook"&&<Lookbook/>} {view==="about"&&<About/>}
-   {view==="product"&&<ProductPage product={selected||products[0]} add={add} wish={wish} setWish={setWish} notify={notify}/>} 
-   {view==="cart"&&<Cart cart={cart} setCart={setCart} go={go}/>} {view==="wishlist"&&<Wishlist wish={wish} setWish={setWish} add={add}/>} 
-   {view==="checkout"&&<Checkout/>} {view==="account"&&<Account/>} {view==="admin"&&<Admin/>}
-   {!['admin','account','checkout'].includes(view)&&<Footer go={go}/>} {toast&&<div className="toast">✓ {toast}</div>}
- </main>
+export default function Cairo26App() {
+  const [view, setView] = useState("home"),
+    [cart, setCart] = useState<number[]>([2]),
+    [wish, setWish] = useState<number[]>([]),
+    [menu, setMenu] = useState(false),
+    [category, setCategory] = useState("ALL"),
+    [selected, setSelected] = useState<Product | null>(null),
+    [toast, setToast] = useState("");
+  const notify = (s: string) => {
+    setToast(s);
+    setTimeout(() => setToast(""), 2200);
+  };
+  const add = (id: number) => {
+    setCart([...cart, id]);
+    notify("Added to your bag");
+  };
+  const filtered = useMemo(
+    () =>
+      category === "ALL"
+        ? products
+        : products.filter((p) => p.cat === category),
+    [category],
+  );
+  const go = (v: string) => {
+    setView(v);
+    setMenu(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  };
+  const nav = ["SHOP", "COLLECTIONS", "LOOKBOOK", "ABOUT"];
+  return (
+    <main>
+      <div className="ticker">
+        FREE DELIVERY OVER 2,500 EGP <span>•</span> DESIGNED IN CAIRO{" "}
+        <span>•</span> EASY 14-DAY EXCHANGES
+      </div>
+      <header>
+        <button className="hamb" onClick={() => setMenu(!menu)}>
+          ☰
+        </button>
+        <button className="brand" onClick={() => go("home")}>
+          CAIRO<span>26</span>
+        </button>
+        <nav className={menu ? "open" : ""}>
+          {nav.map((n) => (
+            <button key={n} onClick={() => go(n.toLowerCase())}>
+              {n}
+            </button>
+          ))}
+          <button onClick={() => go("admin")}>ADMIN</button>
+        </nav>
+        <div className="actions">
+          <button aria-label="Search">{icons.search}</button>
+          <button onClick={() => go("wishlist")} aria-label="Wishlist">
+            {icons.heart}
+            <i>{wish.length}</i>
+          </button>
+          <button onClick={() => go("account")} aria-label="Account">
+            {icons.user}
+          </button>
+          <button onClick={() => go("cart")} aria-label="Cart">
+            {icons.bag}
+            <i>{cart.length}</i>
+          </button>
+        </div>
+      </header>
+      {view === "home" && (
+        <Home
+          go={go}
+          open={(p) => {
+            setSelected(p);
+            go("product");
+          }}
+          add={add}
+        />
+      )}
+      {view === "shop" && (
+        <Shop
+          items={filtered}
+          category={category}
+          setCategory={setCategory}
+          open={(p) => {
+            setSelected(p);
+            go("product");
+          }}
+        />
+      )}
+      {view === "collections" && <Collections go={go} />}{" "}
+      {view === "lookbook" && <Lookbook />} {view === "about" && <About />}
+      {view === "product" && (
+        <ProductPage
+          product={selected || products[0]}
+          add={add}
+          wish={wish}
+          setWish={setWish}
+          notify={notify}
+        />
+      )}
+      {view === "cart" && <Cart cart={cart} setCart={setCart} go={go} />}{" "}
+      {view === "wishlist" && (
+        <Wishlist wish={wish} setWish={setWish} add={add} />
+      )}
+      {view === "checkout" && <Checkout />} {view === "account" && <Account />}{" "}
+      {view === "admin" && <Admin />}
+      {!["admin", "account", "checkout"].includes(view) && (
+        <Footer go={go} />
+      )}{" "}
+      {toast && <div className="toast">✓ {toast}</div>}
+    </main>
+  );
 }
 
-function Home({go,open,add}:{go:(s:string)=>void,open:(p:Product)=>void,add:(n:number)=>void}){return <>
- <section className="hero"><div className="hero-copy"><p>SS / 26 — DROP 01</p><h1>BUILT FOR<br/>THE CITY.</h1><button className="light-btn" onClick={()=>go("shop")}>SHOP THE DROP <span>↗</span></button></div><div className="side-label">CAIRO, EGYPT — 30.0444° N</div></section>
- <section className="marquee"><div>STREET-BORN&nbsp; القاهرة &nbsp;BUILT DIFFERENT&nbsp; CAIRO 26&nbsp; STREET-BORN&nbsp; القاهرة</div></section>
- <section className="section"><div className="section-head"><div><small>01 / NEW ARRIVALS</small><h2>THE NEW DROP</h2></div><button className="link" onClick={()=>go("shop")}>VIEW ALL PRODUCTS →</button></div><div className="grid">{products.slice(0,4).map(p=><Card key={p.id} p={p} open={open} add={add}/>)}</div></section>
- <section className="campaign"><div><small>LIMITED SERIES / 026</small><h2>AFTER<br/>DARK.</h2><p>Uniforms for the ones who keep the city awake.</p><button className="light-btn" onClick={()=>go("collections")}>EXPLORE THE EDIT</button></div></section>
- <section className="story"><div className="story-img"/><div className="story-copy"><small>OUR CITY. OUR UNIFORM.</small><h2>MADE OF<br/>CAIRO.</h2><p>CAIRO 26 is an independent streetwear label shaped by the contrast, rhythm and raw energy of Egypt's capital. Designed locally. Made to move.</p><button className="dark-btn" onClick={()=>go("about")}>OUR STORY</button><div className="stats"><span><b>100%</b>LOCAL VISION</span><span><b>26</b>CAIRO CODE</span></div></div></section>
- <section className="newsletter"><small>JOIN THE INNER CIRCLE</small><h2>EARLY ACCESS.<br/>NO NOISE.</h2><p>Sign up for first access to drops, restocks and private events.</p><form onSubmit={e=>e.preventDefault()}><input placeholder="YOUR EMAIL ADDRESS"/><button>JOIN THE LIST →</button></form></section>
- </>}
+function Home({
+  go,
+  open,
+  add,
+}: {
+  go: (s: string) => void;
+  open: (p: Product) => void;
+  add: (n: number) => void;
+}) {
+  return (
+    <>
+      <section className="hero">
+        <div className="hero-copy">
+          <p>SS / 26 — DROP 01</p>
+          <h1>
+            BUILT FOR
+            <br />
+            THE CITY.
+          </h1>
+          <button className="light-btn" onClick={() => go("shop")}>
+            SHOP THE DROP <span>↗</span>
+          </button>
+        </div>
+        <div className="side-label">CAIRO, EGYPT — 30.0444° N</div>
+      </section>
+      <section className="marquee">
+        <div>
+          STREET-BORN&nbsp; القاهرة &nbsp;BUILT DIFFERENT&nbsp; CAIRO 26&nbsp;
+          STREET-BORN&nbsp; القاهرة
+        </div>
+      </section>
+      <section className="section">
+        <div className="section-head">
+          <div>
+            <small>01 / NEW ARRIVALS</small>
+            <h2>THE NEW DROP</h2>
+          </div>
+          <button className="link" onClick={() => go("shop")}>
+            VIEW ALL PRODUCTS →
+          </button>
+        </div>
+        <div className="grid">
+          {products.slice(0, 4).map((p) => (
+            <Card key={p.id} p={p} open={open} add={add} />
+          ))}
+        </div>
+      </section>
+      <section className="campaign">
+        <div>
+          <small>LIMITED SERIES / 026</small>
+          <h2>
+            AFTER
+            <br />
+            DARK.
+          </h2>
+          <p>Uniforms for the ones who keep the city awake.</p>
+          <button className="light-btn" onClick={() => go("collections")}>
+            EXPLORE THE EDIT
+          </button>
+        </div>
+      </section>
+      <section className="story">
+        <div className="story-img" />
+        <div className="story-copy">
+          <small>OUR CITY. OUR UNIFORM.</small>
+          <h2>
+            MADE OF
+            <br />
+            CAIRO.
+          </h2>
+          <p>
+            CAIRO 26 is an independent streetwear label shaped by the contrast,
+            rhythm and raw energy of Egypt's capital. Designed locally. Made to
+            move.
+          </p>
+          <button className="dark-btn" onClick={() => go("about")}>
+            OUR STORY
+          </button>
+          <div className="stats">
+            <span>
+              <b>100%</b>LOCAL VISION
+            </span>
+            <span>
+              <b>26</b>CAIRO CODE
+            </span>
+          </div>
+        </div>
+      </section>
+      <section className="newsletter">
+        <small>JOIN THE INNER CIRCLE</small>
+        <h2>
+          EARLY ACCESS.
+          <br />
+          NO NOISE.
+        </h2>
+        <p>Sign up for first access to drops, restocks and private events.</p>
+        <form onSubmit={(e) => e.preventDefault()}>
+          <input placeholder="YOUR EMAIL ADDRESS" />
+          <button>JOIN THE LIST →</button>
+        </form>
+      </section>
+    </>
+  );
+}
 
-function Card({p,open,add}:{p:Product,open:(p:Product)=>void,add?:(n:number)=>void}){return <article className="card"><button className="pic" onClick={()=>open(p)}><img src={p.image} alt={p.name}/>{p.badge&&<em>{p.badge}</em>}<span className="quick" onClick={e=>{e.stopPropagation();add?.(p.id)}}>QUICK ADD +</span></button><div><small>{p.cat}</small><h3>{p.name}</h3><p>{p.old&&<del>{p.old.toLocaleString("en-US")} EGP</del>} {p.price.toLocaleString("en-US")} EGP</p></div></article>}
+function Card({
+  p,
+  open,
+  add,
+}: {
+  p: Product;
+  open: (p: Product) => void;
+  add?: (n: number) => void;
+}) {
+  return (
+    <article className="card">
+      <button className="pic" onClick={() => open(p)}>
+        <img src={p.image} alt={p.name} />
+        {p.badge && <em>{p.badge}</em>}
+        <span
+          className="quick"
+          onClick={(e) => {
+            e.stopPropagation();
+            add?.(p.id);
+          }}
+        >
+          QUICK ADD +
+        </span>
+      </button>
+      <div>
+        <small>{p.cat}</small>
+        <h3>{p.name}</h3>
+        <p>
+          {p.old && <del>{p.old.toLocaleString("en-US")} EGP</del>}{" "}
+          {p.price.toLocaleString("en-US")} EGP
+        </p>
+      </div>
+    </article>
+  );
+}
 
-function Shop({items,category,setCategory,open}:{items:Product[],category:string,setCategory:(s:string)=>void,open:(p:Product)=>void}){return <div className="page"><div className="page-title"><small>CAIRO 26 / SHOP</small><h1>ALL PRODUCTS</h1><p>ESSENTIALS FOR THE CITY — DESIGNED IN CAIRO.</p></div><div className="shopbar"><div>{["ALL","T-SHIRTS","HOODIES","CARGOS","JACKETS","ACCESSORIES"].map(c=><button className={category===c?"active":""} onClick={()=>setCategory(c)}>{c}</button>)}</div><button>FILTER +</button></div><div className="grid shop-grid">{items.map(p=><Card key={p.id} p={p} open={open}/>)}</div></div>}
+function Shop({
+  items,
+  category,
+  setCategory,
+  open,
+}: {
+  items: Product[];
+  category: string;
+  setCategory: (s: string) => void;
+  open: (p: Product) => void;
+}) {
+  return (
+    <div className="page">
+      <div className="page-title">
+        <small>CAIRO 26 / SHOP</small>
+        <h1>ALL PRODUCTS</h1>
+        <p>ESSENTIALS FOR THE CITY — DESIGNED IN CAIRO.</p>
+      </div>
+      <div className="shopbar">
+        <div>
+          {[
+            "ALL",
+            "T-SHIRTS",
+            "HOODIES",
+            "CARGOS",
+            "JACKETS",
+            "ACCESSORIES",
+          ].map((c) => (
+            <button
+              className={category === c ? "active" : ""}
+              onClick={() => setCategory(c)}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
+        <button>FILTER +</button>
+      </div>
+      <div className="grid shop-grid">
+        {items.map((p) => (
+          <Card key={p.id} p={p} open={open} />
+        ))}
+      </div>
+    </div>
+  );
+}
 
-function ProductPage({product:p,add,wish,setWish,notify}:{product:Product,add:(n:number)=>void,wish:number[],setWish:(n:number[])=>void,notify:(s:string)=>void}){const [size,setSize]=useState("M");return <div className="product-page"><div className="product-gallery"><img src={p.image}/><img src={p.image}/></div><div className="product-info"><small>{p.cat} / DROP 01</small><h1>{p.name}</h1><div className="price">{p.price.toLocaleString("en-US")} EGP</div><p className="stock">● IN STOCK — READY TO SHIP</p><hr/><label>COLOR — {p.color}</label><div className="swatches"><i/><i/><i/></div><div className="size-row"><label>SELECT SIZE</label><button>SIZE GUIDE ↗</button></div><div className="sizes">{['XS','S','M','L','XL'].map(s=><button className={s===size?'active':''} onClick={()=>setSize(s)}>{s}</button>)}</div><button className="add" onClick={()=>add(p.id)}>ADD TO BAG — {p.price.toLocaleString("en-US")} EGP</button><button className="wish-btn" onClick={()=>{setWish(wish.includes(p.id)?wish.filter(x=>x!==p.id):[...wish,p.id]);notify(wish.includes(p.id)?"Removed from wishlist":"Saved to wishlist")}}>♡ {wish.includes(p.id)?"SAVED":"ADD TO WISHLIST"}</button><details open><summary>DESCRIPTION</summary><p>A heavyweight, relaxed-fit essential inspired by Cairo's late-night streets. Finished with signature 26 detailing.</p></details><details><summary>MATERIALS & CARE</summary><p>100% premium cotton. Wash cold, inside out. Made in Egypt.</p></details><details><summary>DELIVERY & EXCHANGES</summary><p>Cairo delivery in 2–3 days. Nationwide in 3–5 days. Exchanges within 14 days.</p></details></div></div>}
+function ProductPage({
+  product: p,
+  add,
+  wish,
+  setWish,
+  notify,
+}: {
+  product: Product;
+  add: (n: number) => void;
+  wish: number[];
+  setWish: (n: number[]) => void;
+  notify: (s: string) => void;
+}) {
+  const [size, setSize] = useState("M");
+  return (
+    <div className="product-page">
+      <div className="product-gallery">
+        <img src={p.image} />
+        <img src={p.image} />
+      </div>
+      <div className="product-info">
+        <small>{p.cat} / DROP 01</small>
+        <h1>{p.name}</h1>
+        <div className="price">{p.price.toLocaleString("en-US")} EGP</div>
+        <p className="stock">● IN STOCK — READY TO SHIP</p>
+        <hr />
+        <label>COLOR — {p.color}</label>
+        <div className="swatches">
+          <i />
+          <i />
+          <i />
+        </div>
+        <div className="size-row">
+          <label>SELECT SIZE</label>
+          <button>SIZE GUIDE ↗</button>
+        </div>
+        <div className="sizes">
+          {["XS", "S", "M", "L", "XL"].map((s) => (
+            <button
+              className={s === size ? "active" : ""}
+              onClick={() => setSize(s)}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
+        <button className="add" onClick={() => add(p.id)}>
+          ADD TO BAG — {p.price.toLocaleString("en-US")} EGP
+        </button>
+        <button
+          className="wish-btn"
+          onClick={() => {
+            setWish(
+              wish.includes(p.id)
+                ? wish.filter((x) => x !== p.id)
+                : [...wish, p.id],
+            );
+            notify(
+              wish.includes(p.id)
+                ? "Removed from wishlist"
+                : "Saved to wishlist",
+            );
+          }}
+        >
+          ♡ {wish.includes(p.id) ? "SAVED" : "ADD TO WISHLIST"}
+        </button>
+        <details open>
+          <summary>DESCRIPTION</summary>
+          <p>
+            A heavyweight, relaxed-fit essential inspired by Cairo's late-night
+            streets. Finished with signature 26 detailing.
+          </p>
+        </details>
+        <details>
+          <summary>MATERIALS & CARE</summary>
+          <p>100% premium cotton. Wash cold, inside out. Made in Egypt.</p>
+        </details>
+        <details>
+          <summary>DELIVERY & EXCHANGES</summary>
+          <p>
+            Cairo delivery in 2–3 days. Nationwide in 3–5 days. Exchanges within
+            14 days.
+          </p>
+        </details>
+      </div>
+    </div>
+  );
+}
 
-function Collections({go}:{go:(s:string)=>void}){const cols=[['NEW DROPS','ARRIVING NOW'],['SUMMER 26','HEAT, REFRAMED'],['WINTER COLLECTION','CITY LAYERS'],['BEST SELLERS','THE CROWD PICKS'],['LIMITED EDITION','ONCE. THEN GONE.']];return <div className="page"><div className="page-title"><small>CURATED EDITS</small><h1>COLLECTIONS</h1></div><div className="collection-grid">{cols.map((c,i)=><button style={{backgroundImage:`url(${products[i%products.length].image})`}} onClick={()=>go('shop')}><span>0{i+1}</span><div><h2>{c[0]}</h2><p>{c[1]} →</p></div></button>)}</div></div>}
-function Lookbook(){return <div className="page look"><div className="page-title"><small>EDITORIAL / ISSUE 01</small><h1>CAIRO<br/>NEVER STOPS.</h1><p>Shot between Downtown concrete and Zamalek shade.</p></div><div className="look-grid">{products.map((p,i)=><img className={'look-'+i} src={p.image} alt="CAIRO 26 lookbook"/>)}</div></div>}
-function About(){return <div className="page"><div className="about-hero"><small>EST. CAIRO / 2026</small><h1>THE CITY<br/>IS THE LOGO.</h1></div><div className="manifesto"><small>OUR MANIFESTO</small><h2>We make clothes for people who see beauty in the unfinished.</h2><div><p>CAIRO 26 began with a simple idea: Egyptian streetwear should speak in its own voice. Not borrowed. Not diluted. Ours.</p><p>Every piece pulls from the city—its handmade signs, concrete textures, midnight traffic and stubborn optimism. We design locally in small runs, with considered materials and zero filler.</p></div></div><FAQ/></div>}
+function Collections({ go }: { go: (s: string) => void }) {
+  const cols = [
+    ["NEW DROPS", "ARRIVING NOW"],
+    ["SUMMER 26", "HEAT, REFRAMED"],
+    ["WINTER COLLECTION", "CITY LAYERS"],
+    ["BEST SELLERS", "THE CROWD PICKS"],
+    ["LIMITED EDITION", "ONCE. THEN GONE."],
+  ];
+  return (
+    <div className="page">
+      <div className="page-title">
+        <small>CURATED EDITS</small>
+        <h1>COLLECTIONS</h1>
+      </div>
+      <div className="collection-grid">
+        {cols.map((c, i) => (
+          <button
+            style={{
+              backgroundImage: `url(${products[i % products.length].image})`,
+            }}
+            onClick={() => go("shop")}
+          >
+            <span>0{i + 1}</span>
+            <div>
+              <h2>{c[0]}</h2>
+              <p>{c[1]} →</p>
+            </div>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+function Lookbook() {
+  return (
+    <div className="page look">
+      <div className="page-title">
+        <small>EDITORIAL / ISSUE 01</small>
+        <h1>
+          CAIRO
+          <br />
+          NEVER STOPS.
+        </h1>
+        <p>Shot between Downtown concrete and Zamalek shade.</p>
+      </div>
+      <div className="look-grid">
+        {products.map((p, i) => (
+          <img className={"look-" + i} src={p.image} alt="CAIRO 26 lookbook" />
+        ))}
+      </div>
+    </div>
+  );
+}
+function About() {
+  return (
+    <div className="page">
+      <div className="about-hero">
+        <small>EST. CAIRO / 2026</small>
+        <h1>
+          THE CITY
+          <br />
+          IS THE LOGO.
+        </h1>
+      </div>
+      <div className="manifesto">
+        <small>OUR MANIFESTO</small>
+        <h2>We make clothes for people who see beauty in the unfinished.</h2>
+        <div>
+          <p>
+            CAIRO 26 began with a simple idea: Egyptian streetwear should speak
+            in its own voice. Not borrowed. Not diluted. Ours.
+          </p>
+          <p>
+            Every piece pulls from the city—its handmade signs, concrete
+            textures, midnight traffic and stubborn optimism. We design locally
+            in small runs, with considered materials and zero filler.
+          </p>
+        </div>
+      </div>
+      <FAQ />
+    </div>
+  );
+}
 
-function Cart({cart,setCart,go}:{cart:number[],setCart:(n:number[])=>void,go:(s:string)=>void}){const lines=[...new Set(cart)].map(id=>({p:products.find(p=>p.id===id)!,qty:cart.filter(x=>x===id).length}));const total=cart.reduce((s,id)=>s+(products.find(p=>p.id===id)?.price||0),0);return <div className="page narrow"><div className="page-title"><small>YOUR SELECTION</small><h1>SHOPPING BAG ({cart.length})</h1></div><div className="cart-layout"><div>{lines.length?lines.map(({p,qty})=><div className="cart-line"><img src={p.image}/><div><small>{p.cat}</small><h3>{p.name}</h3><p>BLACK / M</p><div className="qty"><button onClick={()=>{const i=cart.indexOf(p.id);setCart(cart.filter((_,x)=>x!==i))}}>−</button><span>{qty}</span><button onClick={()=>setCart([...cart,p.id])}>+</button></div></div><strong>{(p.price*qty).toLocaleString("en-US")} EGP</strong><button className="remove" onClick={()=>setCart(cart.filter(x=>x!==p.id))}>REMOVE</button></div>):<p>Your bag is empty.</p>}</div><aside className="summary"><h2>ORDER SUMMARY</h2><p><span>SUBTOTAL</span><b>{total.toLocaleString("en-US")} EGP</b></p><p><span>DELIVERY</span><b>{total>=2500?'FREE':'80 EGP'}</b></p><label>DISCOUNT CODE</label><div><input placeholder="ENTER CODE"/><button>APPLY</button></div><hr/><p className="total"><span>TOTAL</span><b>{(total+(total&&total<2500?80:0)).toLocaleString("en-US")} EGP</b></p><button className="add" disabled={!cart.length} onClick={()=>go('checkout')}>CHECKOUT →</button></aside></div></div>}
+function Cart({
+  cart,
+  setCart,
+  go,
+}: {
+  cart: number[];
+  setCart: (n: number[]) => void;
+  go: (s: string) => void;
+}) {
+  const lines = [...new Set(cart)].map((id) => ({
+    p: products.find((p) => p.id === id)!,
+    qty: cart.filter((x) => x === id).length,
+  }));
+  const total = cart.reduce(
+    (s, id) => s + (products.find((p) => p.id === id)?.price || 0),
+    0,
+  );
+  return (
+    <div className="page narrow">
+      <div className="page-title">
+        <small>YOUR SELECTION</small>
+        <h1>SHOPPING BAG ({cart.length})</h1>
+      </div>
+      <div className="cart-layout">
+        <div>
+          {lines.length ? (
+            lines.map(({ p, qty }) => (
+              <div className="cart-line">
+                <img src={p.image} />
+                <div>
+                  <small>{p.cat}</small>
+                  <h3>{p.name}</h3>
+                  <p>BLACK / M</p>
+                  <div className="qty">
+                    <button
+                      onClick={() => {
+                        const i = cart.indexOf(p.id);
+                        setCart(cart.filter((_, x) => x !== i));
+                      }}
+                    >
+                      −
+                    </button>
+                    <span>{qty}</span>
+                    <button onClick={() => setCart([...cart, p.id])}>+</button>
+                  </div>
+                </div>
+                <strong>{(p.price * qty).toLocaleString("en-US")} EGP</strong>
+                <button
+                  className="remove"
+                  onClick={() => setCart(cart.filter((x) => x !== p.id))}
+                >
+                  REMOVE
+                </button>
+              </div>
+            ))
+          ) : (
+            <p>Your bag is empty.</p>
+          )}
+        </div>
+        <aside className="summary">
+          <h2>ORDER SUMMARY</h2>
+          <p>
+            <span>SUBTOTAL</span>
+            <b>{total.toLocaleString("en-US")} EGP</b>
+          </p>
+          <p>
+            <span>DELIVERY</span>
+            <b>{total >= 2500 ? "FREE" : "80 EGP"}</b>
+          </p>
+          <label>DISCOUNT CODE</label>
+          <div>
+            <input placeholder="ENTER CODE" />
+            <button>APPLY</button>
+          </div>
+          <hr />
+          <p className="total">
+            <span>TOTAL</span>
+            <b>
+              {(total + (total && total < 2500 ? 80 : 0)).toLocaleString(
+                "en-US",
+              )}{" "}
+              EGP
+            </b>
+          </p>
+          <button
+            className="add"
+            disabled={!cart.length}
+            onClick={() => go("checkout")}
+          >
+            CHECKOUT →
+          </button>
+        </aside>
+      </div>
+    </div>
+  );
+}
 
-function Wishlist({wish,setWish,add}:{wish:number[],setWish:(n:number[])=>void,add:(n:number)=>void}){const items=products.filter(p=>wish.includes(p.id));return <div className="page"><div className="page-title"><small>SAVED FOR LATER</small><h1>WISHLIST ({items.length})</h1></div>{items.length?<div className="grid">{items.map(p=><Card p={p} open={()=>{}} add={add}/>)}</div>:<div className="empty"><h2>NOTHING SAVED YET.</h2><p>Tap the heart on a product to keep it here.</p></div>}</div>}
+function Wishlist({
+  wish,
+  setWish,
+  add,
+}: {
+  wish: number[];
+  setWish: (n: number[]) => void;
+  add: (n: number) => void;
+}) {
+  const items = products.filter((p) => wish.includes(p.id));
+  return (
+    <div className="page">
+      <div className="page-title">
+        <small>SAVED FOR LATER</small>
+        <h1>WISHLIST ({items.length})</h1>
+      </div>
+      {items.length ? (
+        <div className="grid">
+          {items.map((p) => (
+            <Card p={p} open={() => {}} add={add} />
+          ))}
+        </div>
+      ) : (
+        <div className="empty">
+          <h2>NOTHING SAVED YET.</h2>
+          <p>Tap the heart on a product to keep it here.</p>
+        </div>
+      )}
+    </div>
+  );
+}
 
-function Checkout(){return <div className="checkout"><div className="checkout-head"><b>CAIRO<span>26</span></b><span>SECURE CHECKOUT 🔒</span></div><div className="checkout-grid"><form><small>01 / CONTACT</small><h2>YOUR INFORMATION</h2><input placeholder="EMAIL ADDRESS"/><div className="two"><input placeholder="FIRST NAME"/><input placeholder="LAST NAME"/></div><input placeholder="PHONE NUMBER (+20)"/><small>02 / DELIVERY</small><h2>SHIPPING ADDRESS</h2><select><option>CAIRO</option><option>GIZA</option><option>ALEXANDRIA</option><option>DAKAHLIA</option><option>OTHER GOVERNORATE</option></select><input placeholder="AREA / DISTRICT"/><input placeholder="STREET, BUILDING, FLOOR, APARTMENT"/><textarea placeholder="DELIVERY NOTES (OPTIONAL)"/><small>03 / PAYMENT</small><h2>PAYMENT METHOD</h2><label className="pay"><input type="radio" defaultChecked name="pay"/> CASH ON DELIVERY <span>PAY WHEN IT ARRIVES</span></label><label className="pay"><input type="radio" name="pay"/> CREDIT / DEBIT CARD <span>VISA • MASTERCARD</span></label><button className="add">PLACE ORDER — 1,970 EGP</button></form><aside className="summary"><h2>YOUR ORDER</h2><div className="mini"><img src={products[1].image}/><p><b>{products[1].name}</b><small>STONE / M / QTY 1</small></p><strong>1,890 EGP</strong></div><p><span>DELIVERY</span><b>80 EGP</b></p><hr/><p className="total"><span>TOTAL</span><b>1,970 EGP</b></p></aside></div></div>}
+function Checkout() {
+  return (
+    <div className="checkout">
+      <div className="checkout-head">
+        <b>
+          CAIRO<span>26</span>
+        </b>
+        <span>SECURE CHECKOUT 🔒</span>
+      </div>
+      <div className="checkout-grid">
+        <form>
+          <small>01 / CONTACT</small>
+          <h2>YOUR INFORMATION</h2>
+          <input placeholder="EMAIL ADDRESS" />
+          <div className="two">
+            <input placeholder="FIRST NAME" />
+            <input placeholder="LAST NAME" />
+          </div>
+          <input placeholder="PHONE NUMBER (+20)" />
+          <small>02 / DELIVERY</small>
+          <h2>SHIPPING ADDRESS</h2>
+          <select>
+            <option>CAIRO</option>
+            <option>GIZA</option>
+            <option>ALEXANDRIA</option>
+            <option>DAKAHLIA</option>
+            <option>OTHER GOVERNORATE</option>
+          </select>
+          <input placeholder="AREA / DISTRICT" />
+          <input placeholder="STREET, BUILDING, FLOOR, APARTMENT" />
+          <textarea placeholder="DELIVERY NOTES (OPTIONAL)" />
+          <small>03 / PAYMENT</small>
+          <h2>PAYMENT METHOD</h2>
+          <label className="pay">
+            <input type="radio" defaultChecked name="pay" /> CASH ON DELIVERY{" "}
+            <span>PAY WHEN IT ARRIVES</span>
+          </label>
+          <label className="pay">
+            <input type="radio" name="pay" /> CREDIT / DEBIT CARD{" "}
+            <span>VISA • MASTERCARD</span>
+          </label>
+          <button className="add">PLACE ORDER — 1,970 EGP</button>
+        </form>
+        <aside className="summary">
+          <h2>YOUR ORDER</h2>
+          <div className="mini">
+            <img src={products[1].image} />
+            <p>
+              <b>{products[1].name}</b>
+              <small>STONE / M / QTY 1</small>
+            </p>
+            <strong>1,890 EGP</strong>
+          </div>
+          <p>
+            <span>DELIVERY</span>
+            <b>80 EGP</b>
+          </p>
+          <hr />
+          <p className="total">
+            <span>TOTAL</span>
+            <b>1,970 EGP</b>
+          </p>
+        </aside>
+      </div>
+    </div>
+  );
+}
 
-function Account(){return <div className="dashboard"><aside><button className="brand">CAIRO<span>26</span></button><p>MY ACCOUNT</p>{['OVERVIEW','ORDERS','ADDRESSES','WISHLIST','ACCOUNT DETAILS'].map((x,i)=><button className={i===0?'active':''}>{x}<span>→</span></button>)}<button className="logout">LOG OUT</button></aside><section><div className="dash-top"><div><small>WELCOME BACK</small><h1>HEY, YOUSSEF.</h1></div><button>NEED HELP? ↗</button></div><div className="account-cards"><article><small>TOTAL ORDERS</small><b>04</b><span>VIEW ORDERS →</span></article><article><small>ACTIVE ORDER</small><b>01</b><span className="green">● SHIPPED</span></article><article><small>REWARDS</small><b>260</b><span>CAIRO POINTS</span></article></div><div className="recent"><div className="section-head"><h2>RECENT ORDER</h2><button>VIEW ALL →</button></div><table><tbody><tr><td>#C26-1048</td><td>08 AUG 2026</td><td>3 ITEMS</td><td>3,470 EGP</td><td><i>SHIPPED</i></td><td>TRACK →</td></tr></tbody></table></div></section></div>}
+function Account() {
+  return (
+    <div className="dashboard">
+      <aside>
+        <button className="brand">
+          CAIRO<span>26</span>
+        </button>
+        <p>MY ACCOUNT</p>
+        {["OVERVIEW", "ORDERS", "ADDRESSES", "WISHLIST", "ACCOUNT DETAILS"].map(
+          (x, i) => (
+            <button className={i === 0 ? "active" : ""}>
+              {x}
+              <span>→</span>
+            </button>
+          ),
+        )}
+        <button className="logout">LOG OUT</button>
+      </aside>
+      <section>
+        <div className="dash-top">
+          <div>
+            <small>WELCOME BACK</small>
+            <h1>HEY, YOUSSEF.</h1>
+          </div>
+          <button>NEED HELP? ↗</button>
+        </div>
+        <div className="account-cards">
+          <article>
+            <small>TOTAL ORDERS</small>
+            <b>04</b>
+            <span>VIEW ORDERS →</span>
+          </article>
+          <article>
+            <small>ACTIVE ORDER</small>
+            <b>01</b>
+            <span className="green">● SHIPPED</span>
+          </article>
+          <article>
+            <small>REWARDS</small>
+            <b>260</b>
+            <span>CAIRO POINTS</span>
+          </article>
+        </div>
+        <div className="recent">
+          <div className="section-head">
+            <h2>RECENT ORDER</h2>
+            <button>VIEW ALL →</button>
+          </div>
+          <table>
+            <tbody>
+              <tr>
+                <td>#C26-1048</td>
+                <td>08 AUG 2026</td>
+                <td>3 ITEMS</td>
+                <td>3,470 EGP</td>
+                <td>
+                  <i>SHIPPED</i>
+                </td>
+                <td>TRACK →</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  );
+}
 
-function Admin(){
- const orders=[['#C26-1052','Mariam Adel','2,780 EGP','CONFIRMED'],['#C26-1051','Omar Nabil','1,290 EGP','PREPARING'],['#C26-1050','Salma Hany','3,860 EGP','SHIPPED'],['#C26-1049','Ahmed Tarek','890 EGP','PENDING']];
- const [showForm,setShowForm]=useState(false),[saved,setSaved]=useState<{name:string;category:string;price:string;stock:string;image:string}[]>([]),[savedNotice,setSavedNotice]=useState(false),[imagePreview,setImagePreview]=useState("");
- const closeForm=()=>{setShowForm(false);setImagePreview("")};
- const chooseImage=(e:React.ChangeEvent<HTMLInputElement>)=>{const file=e.target.files?.[0];if(!file)return;if(file.size>5*1024*1024){e.target.value="";alert("Please choose an image smaller than 5 MB.");return}const reader=new FileReader();reader.onload=()=>setImagePreview(String(reader.result));reader.readAsDataURL(file)};
- const submit=(e:React.FormEvent<HTMLFormElement>)=>{e.preventDefault();const data=new FormData(e.currentTarget);setSaved([{name:String(data.get('name')),category:String(data.get('category')),price:String(data.get('price')),stock:String(data.get('stock')),image:imagePreview},...saved]);closeForm();setSavedNotice(true);setTimeout(()=>setSavedNotice(false),2500)};
- return <div className="admin"><aside><div className="admin-logo">C26<span>ADMIN</span></div>{['▦  OVERVIEW','□  PRODUCTS','▤  ORDERS','◇  CUSTOMERS','⌁  COLLECTIONS','%  DISCOUNTS','▣  HOMEPAGE','⚙  SETTINGS'].map((x,i)=><button key={x} className={i===0?'active':''}>{x}</button>)}<div className="admin-user"><i>YA</i><p><b>Youssef Ahmed</b><small>OWNER</small></p></div></aside><section><header><div><small>WEDNESDAY, 12 AUGUST</small><h1>GOOD MORNING, YOUSSEF.</h1></div><button className="dark-btn" onClick={()=>setShowForm(true)}>+ ADD PRODUCT</button></header><div className="metric-grid"><article><small>TOTAL REVENUE</small><b>248,650 <i>EGP</i></b><span>↗ 18.4% THIS MONTH</span></article><article><small>TOTAL ORDERS</small><b>186</b><span>↗ 12.2% THIS MONTH</span></article><article><small>PRODUCT CATALOG</small><b>{products.length+saved.length}</b><span>{saved.length?`+ ${saved.length} NEW PRODUCT${saved.length>1?'S':''}`:'READY TO MANAGE'}</span></article><article><small>AVG. ORDER VALUE</small><b>1,337 <i>EGP</i></b><span>↗ 4.1% THIS MONTH</span></article></div><div className="admin-mid"><article className="chart"><div className="section-head"><div><small>SALES OVERVIEW</small><h2>68,420 EGP</h2></div><select><option>LAST 7 DAYS</option></select></div><div className="bars">{[42,61,47,76,63,91,72].map((n,i)=><div key={i}><i style={{height:n+'%'}}/><small>{['THU','FRI','SAT','SUN','MON','TUE','WED'][i]}</small></div>)}</div></article><article className="top-product"><small>BEST SELLER</small><img src={products[1].image}/><h3>Downtown Box Hoodie</h3><p><span>84 SOLD</span><b>158,760 EGP</b></p></article></div>{saved.length>0&&<div className="orders"><div className="section-head"><h2>NEW PRODUCTS</h2><small>SAVED THIS SESSION</small></div><table><thead><tr><th>PRODUCT</th><th>CATEGORY</th><th>PRICE</th><th>STOCK</th><th>STATUS</th></tr></thead><tbody>{saved.map((p,i)=><tr key={i}><td><div className="saved-product"><img src={p.image}/><b>{p.name}</b></div></td><td>{p.category}</td><td>{Number(p.price).toLocaleString('en-US')} EGP</td><td>{p.stock}</td><td><i>ACTIVE</i></td></tr>)}</tbody></table></div>}<div className="orders"><div className="section-head"><h2>RECENT ORDERS</h2><button>VIEW ALL ORDERS →</button></div><table><thead><tr><th>ORDER</th><th>CUSTOMER</th><th>TOTAL</th><th>STATUS</th><th>ACTION</th></tr></thead><tbody>{orders.map((o,row)=><tr key={row}>{o.map((x,i)=><td key={x}>{i===3?<i>{x}</i>:x}</td>)}<td>•••</td></tr>)}</tbody></table></div></section>{showForm&&<div className="modal-backdrop" onMouseDown={closeForm}><div className="product-modal" onMouseDown={e=>e.stopPropagation()}><div className="modal-head"><div><small>PRODUCT CATALOG</small><h2>ADD NEW PRODUCT</h2></div><button type="button" onClick={closeForm} aria-label="Close">×</button></div><form onSubmit={submit}><label>PRODUCT NAME<input name="name" required placeholder="E.G. DOWNTOWN HEAVY TEE"/></label><div className="form-two"><label>CATEGORY<select name="category" required><option>T-SHIRTS</option><option>HOODIES</option><option>CARGOS</option><option>JACKETS</option><option>CAPS</option><option>ACCESSORIES</option></select></label><label>COLLECTION<select name="collection"><option>NEW DROPS</option><option>SUMMER 26</option><option>BEST SELLERS</option><option>LIMITED EDITION</option></select></label></div><div className="form-two"><label>PRICE (EGP)<input name="price" type="number" min="1" required placeholder="890"/></label><label>STOCK QUANTITY<input name="stock" type="number" min="0" required placeholder="24"/></label></div><label>PRODUCT IMAGE<div className={'image-upload '+(imagePreview?'has-image':'')}><input name="image" type="file" accept="image/jpeg,image/png,image/webp" required onChange={chooseImage}/>{imagePreview?<><img src={imagePreview} alt="Product preview"/><span>CHANGE IMAGE</span></>:<><b>↑</b><strong>CHOOSE IMAGE FROM DEVICE</strong><small>JPG, PNG OR WEBP — MAX 5 MB</small></>}</div></label><label>SIZES<input name="sizes" placeholder="XS, S, M, L, XL" defaultValue="S, M, L, XL"/></label><label>COLORS<input name="colors" placeholder="BLACK, STONE"/></label><label>DESCRIPTION<textarea name="description" rows={3} placeholder="PRODUCT DETAILS, FIT AND MATERIALS"/></label><div className="modal-actions"><button type="button" onClick={closeForm}>CANCEL</button><button className="dark-btn" type="submit">SAVE PRODUCT →</button></div></form></div></div>}{savedNotice&&<div className="toast">✓ PRODUCT ADDED SUCCESSFULLY</div>}</div>}
+function Admin() {
+  const adminTabs = [
+    "OVERVIEW",
+    "PRODUCTS",
+    "ORDERS",
+    "CUSTOMERS",
+    "COLLECTIONS",
+    "DISCOUNTS",
+    "HOMEPAGE",
+    "SETTINGS",
+  ];
+  const orders = [
+    ["#C26-1052", "Mariam Adel", "2,780 EGP", "CONFIRMED"],
+    ["#C26-1051", "Omar Nabil", "1,290 EGP", "PREPARING"],
+    ["#C26-1050", "Salma Hany", "3,860 EGP", "SHIPPED"],
+    ["#C26-1049", "Ahmed Tarek", "890 EGP", "PENDING"],
+  ];
+  const [tab, setTab] = useState("OVERVIEW"),
+    [showForm, setShowForm] = useState(false),
+    [saved, setSaved] = useState<
+      {
+        name: string;
+        category: string;
+        price: string;
+        stock: string;
+        image: string;
+      }[]
+    >([]),
+    [savedNotice, setSavedNotice] = useState(false),
+    [imagePreview, setImagePreview] = useState("");
+  const closeForm = () => {
+    setShowForm(false);
+    setImagePreview("");
+  };
+  const chooseImage = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      e.target.value = "";
+      alert("Please choose an image smaller than 5 MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => setImagePreview(String(reader.result));
+    reader.readAsDataURL(file);
+  };
+  const submit = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const data = new FormData(e.currentTarget);
+    setSaved([
+      {
+        name: String(data.get("name")),
+        category: String(data.get("category")),
+        price: String(data.get("price")),
+        stock: String(data.get("stock")),
+        image: imagePreview,
+      },
+      ...saved,
+    ]);
+    closeForm();
+    setSavedNotice(true);
+    setTimeout(() => setSavedNotice(false), 2500);
+  };
+  return (
+    <div className="admin">
+      <aside>
+        <div className="admin-logo">
+          C26<span>ADMIN</span>
+        </div>
+        {adminTabs.map((x, i) => (
+          <button
+            key={x}
+            onClick={() => setTab(x)}
+            className={tab === x ? "active" : ""}
+          >
+            {["▦", "□", "▤", "◇", "⌁", "%", "▣", "⚙"][i]} &nbsp; {x}
+          </button>
+        ))}
+        <div className="admin-user">
+          <i>YA</i>
+          <p>
+            <b>Youssef Ahmed</b>
+            <small>OWNER</small>
+          </p>
+        </div>
+      </aside>
+      <section className={tab === "OVERVIEW" ? "" : "admin-section-alt"}>
+        <header>
+          <div>
+            <small>ADMIN / {tab}</small>
+            <h1>{tab === "OVERVIEW" ? "GOOD MORNING, YOUSSEF." : tab}</h1>
+          </div>
+          <button className="dark-btn" onClick={() => setShowForm(true)}>
+            + ADD PRODUCT
+          </button>
+        </header>
+        {tab !== "OVERVIEW" && (
+          <AdminPanel
+            tab={tab}
+            saved={saved}
+            setSaved={setSaved}
+            addProduct={() => setShowForm(true)}
+            notify={() => {
+              setSavedNotice(true);
+              setTimeout(() => setSavedNotice(false), 2500);
+            }}
+          />
+        )}
+        <div className="metric-grid">
+          <article>
+            <small>TOTAL REVENUE</small>
+            <b>
+              248,650 <i>EGP</i>
+            </b>
+            <span>↗ 18.4% THIS MONTH</span>
+          </article>
+          <article>
+            <small>TOTAL ORDERS</small>
+            <b>186</b>
+            <span>↗ 12.2% THIS MONTH</span>
+          </article>
+          <article>
+            <small>PRODUCT CATALOG</small>
+            <b>{products.length + saved.length}</b>
+            <span>
+              {saved.length
+                ? `+ ${saved.length} NEW PRODUCT${saved.length > 1 ? "S" : ""}`
+                : "READY TO MANAGE"}
+            </span>
+          </article>
+          <article>
+            <small>AVG. ORDER VALUE</small>
+            <b>
+              1,337 <i>EGP</i>
+            </b>
+            <span>↗ 4.1% THIS MONTH</span>
+          </article>
+        </div>
+        <div className="admin-mid">
+          <article className="chart">
+            <div className="section-head">
+              <div>
+                <small>SALES OVERVIEW</small>
+                <h2>68,420 EGP</h2>
+              </div>
+              <select>
+                <option>LAST 7 DAYS</option>
+              </select>
+            </div>
+            <div className="bars">
+              {[42, 61, 47, 76, 63, 91, 72].map((n, i) => (
+                <div key={i}>
+                  <i style={{ height: n + "%" }} />
+                  <small>
+                    {["THU", "FRI", "SAT", "SUN", "MON", "TUE", "WED"][i]}
+                  </small>
+                </div>
+              ))}
+            </div>
+          </article>
+          <article className="top-product">
+            <small>BEST SELLER</small>
+            <img src={products[1].image} />
+            <h3>Downtown Box Hoodie</h3>
+            <p>
+              <span>84 SOLD</span>
+              <b>158,760 EGP</b>
+            </p>
+          </article>
+        </div>
+        {saved.length > 0 && (
+          <div className="orders">
+            <div className="section-head">
+              <h2>NEW PRODUCTS</h2>
+              <small>SAVED THIS SESSION</small>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th>PRODUCT</th>
+                  <th>CATEGORY</th>
+                  <th>PRICE</th>
+                  <th>STOCK</th>
+                  <th>STATUS</th>
+                </tr>
+              </thead>
+              <tbody>
+                {saved.map((p, i) => (
+                  <tr key={i}>
+                    <td>
+                      <div className="saved-product">
+                        <img src={p.image} />
+                        <b>{p.name}</b>
+                      </div>
+                    </td>
+                    <td>{p.category}</td>
+                    <td>{Number(p.price).toLocaleString("en-US")} EGP</td>
+                    <td>{p.stock}</td>
+                    <td>
+                      <i>ACTIVE</i>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        <div className="orders">
+          <div className="section-head">
+            <h2>RECENT ORDERS</h2>
+            <button>VIEW ALL ORDERS →</button>
+          </div>
+          <table>
+            <thead>
+              <tr>
+                <th>ORDER</th>
+                <th>CUSTOMER</th>
+                <th>TOTAL</th>
+                <th>STATUS</th>
+                <th>ACTION</th>
+              </tr>
+            </thead>
+            <tbody>
+              {orders.map((o, row) => (
+                <tr key={row}>
+                  {o.map((x, i) => (
+                    <td key={x}>{i === 3 ? <i>{x}</i> : x}</td>
+                  ))}
+                  <td>•••</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </section>
+      {showForm && (
+        <div className="modal-backdrop" onMouseDown={closeForm}>
+          <div
+            className="product-modal"
+            onMouseDown={(e) => e.stopPropagation()}
+          >
+            <div className="modal-head">
+              <div>
+                <small>PRODUCT CATALOG</small>
+                <h2>ADD NEW PRODUCT</h2>
+              </div>
+              <button type="button" onClick={closeForm} aria-label="Close">
+                ×
+              </button>
+            </div>
+            <form onSubmit={submit}>
+              <label>
+                PRODUCT NAME
+                <input
+                  name="name"
+                  required
+                  placeholder="E.G. DOWNTOWN HEAVY TEE"
+                />
+              </label>
+              <div className="form-two">
+                <label>
+                  CATEGORY
+                  <select name="category" required>
+                    <option>T-SHIRTS</option>
+                    <option>HOODIES</option>
+                    <option>CARGOS</option>
+                    <option>JACKETS</option>
+                    <option>CAPS</option>
+                    <option>ACCESSORIES</option>
+                  </select>
+                </label>
+                <label>
+                  COLLECTION
+                  <select name="collection">
+                    <option>NEW DROPS</option>
+                    <option>SUMMER 26</option>
+                    <option>BEST SELLERS</option>
+                    <option>LIMITED EDITION</option>
+                  </select>
+                </label>
+              </div>
+              <div className="form-two">
+                <label>
+                  PRICE (EGP)
+                  <input
+                    name="price"
+                    type="number"
+                    min="1"
+                    required
+                    placeholder="890"
+                  />
+                </label>
+                <label>
+                  STOCK QUANTITY
+                  <input
+                    name="stock"
+                    type="number"
+                    min="0"
+                    required
+                    placeholder="24"
+                  />
+                </label>
+              </div>
+              <label>
+                PRODUCT IMAGE
+                <div
+                  className={
+                    "image-upload " + (imagePreview ? "has-image" : "")
+                  }
+                >
+                  <input
+                    name="image"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    required
+                    onChange={chooseImage}
+                  />
+                  {imagePreview ? (
+                    <>
+                      <img src={imagePreview} alt="Product preview" />
+                      <span>CHANGE IMAGE</span>
+                    </>
+                  ) : (
+                    <>
+                      <b>↑</b>
+                      <strong>CHOOSE IMAGE FROM DEVICE</strong>
+                      <small>JPG, PNG OR WEBP — MAX 5 MB</small>
+                    </>
+                  )}
+                </div>
+              </label>
+              <label>
+                SIZES
+                <input
+                  name="sizes"
+                  placeholder="XS, S, M, L, XL"
+                  defaultValue="S, M, L, XL"
+                />
+              </label>
+              <label>
+                COLORS
+                <input name="colors" placeholder="BLACK, STONE" />
+              </label>
+              <label>
+                DESCRIPTION
+                <textarea
+                  name="description"
+                  rows={3}
+                  placeholder="PRODUCT DETAILS, FIT AND MATERIALS"
+                />
+              </label>
+              <div className="modal-actions">
+                <button type="button" onClick={closeForm}>
+                  CANCEL
+                </button>
+                <button className="dark-btn" type="submit">
+                  SAVE PRODUCT →
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {savedNotice && <div className="toast">✓ PRODUCT ADDED SUCCESSFULLY</div>}
+    </div>
+  );
+}
 
-function FAQ(){return <section className="faq"><small>NEED TO KNOW</small><h2>FAQ</h2>{['HOW LONG DOES DELIVERY TAKE?','CAN I EXCHANGE OR RETURN AN ITEM?','HOW DO I FIND MY SIZE?','WHAT PAYMENT METHODS DO YOU ACCEPT?'].map((q,i)=><details><summary>{q}<span>+</span></summary><p>{i===0?'Cairo orders arrive in 2–3 working days; other governorates in 3–5.':i===1?'Yes. Request an exchange within 14 days, with the item unworn and tags attached.':i===2?'Use the size guide on every product page, or message us for a fit check.':'Cash on delivery and secure card payments are available across Egypt.'}</p></details>)}</section>}
-function Footer({go}:{go:(s:string)=>void}){return <footer><div><div className="brand foot-brand">CAIRO<span>26</span></div><p>STREETWEAR, BORN IN CAIRO.<br/>MADE FOR EVERYWHERE.</p></div><div><b>SHOP</b>{['NEW DROPS','T-SHIRTS','HOODIES','CARGOS','ACCESSORIES'].map(x=><button onClick={()=>go('shop')}>{x}</button>)}</div><div><b>HELP</b>{['CONTACT US','DELIVERY','EXCHANGES & RETURNS','SIZE GUIDE','FAQ'].map(x=><button onClick={()=>go('about')}>{x}</button>)}</div><div><b>FIND US</b><a>INSTAGRAM ↗</a><a>WHATSAPP ↗</a><a>HELLO@CAIRO26.COM</a><p>ZAMALEK, CAIRO<br/>EGYPT</p></div><div className="copyright"><span>© 2026 CAIRO 26</span><span>CAIRO — 30.0444° N, 31.2357° E</span></div></footer>}
+type SavedProduct = {
+  name: string;
+  category: string;
+  price: string;
+  stock: string;
+  image: string;
+};
+
+function AdminPanel({
+  tab,
+  saved,
+  setSaved,
+  addProduct,
+  notify,
+}: {
+  tab: string;
+  saved: SavedProduct[];
+  setSaved: (items: SavedProduct[]) => void;
+  addProduct: () => void;
+  notify: () => void;
+}) {
+  const action = () => notify();
+  if (tab === "PRODUCTS")
+    return (
+      <div className="admin-panel">
+        <div className="panel-toolbar">
+          <div>
+            <small>CATALOG MANAGEMENT</small>
+            <h2>ALL PRODUCTS ({products.length + saved.length})</h2>
+          </div>
+          <button className="dark-btn" onClick={addProduct}>
+            + ADD PRODUCT
+          </button>
+        </div>
+        <div className="orders">
+          <table>
+            <thead>
+              <tr>
+                <th>PRODUCT</th>
+                <th>CATEGORY</th>
+                <th>PRICE</th>
+                <th>STOCK</th>
+                <th>ACTIONS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                ...saved,
+                ...products.map((p) => ({
+                  name: p.name,
+                  category: p.cat,
+                  price: String(p.price),
+                  stock: "24",
+                  image: p.image,
+                })),
+              ].map((p, i) => (
+                <tr key={p.name + i}>
+                  <td>
+                    <div className="saved-product">
+                      <img src={p.image} />
+                      <b>{p.name}</b>
+                    </div>
+                  </td>
+                  <td>{p.category}</td>
+                  <td>{Number(p.price).toLocaleString("en-US")} EGP</td>
+                  <td>{p.stock}</td>
+                  <td>
+                    <button className="table-action" onClick={action}>
+                      EDIT
+                    </button>
+                    {i < saved.length && (
+                      <button
+                        className="table-action danger"
+                        onClick={() =>
+                          setSaved(saved.filter((_, x) => x !== i))
+                        }
+                      >
+                        DELETE
+                      </button>
+                    )}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  if (tab === "ORDERS")
+    return (
+      <div className="admin-panel">
+        <div className="panel-toolbar">
+          <div>
+            <small>FULFILMENT</small>
+            <h2>ORDER MANAGEMENT</h2>
+          </div>
+          <button className="outline-admin" onClick={action}>
+            EXPORT ORDERS
+          </button>
+        </div>
+        <div className="orders">
+          <table>
+            <thead>
+              <tr>
+                <th>ORDER</th>
+                <th>CUSTOMER</th>
+                <th>TOTAL</th>
+                <th>UPDATE STATUS</th>
+                <th>DETAILS</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                ["#C26-1052", "Mariam Adel", "2,780 EGP"],
+                ["#C26-1051", "Omar Nabil", "1,290 EGP"],
+                ["#C26-1050", "Salma Hany", "3,860 EGP"],
+                ["#C26-1049", "Ahmed Tarek", "890 EGP"],
+              ].map((o) => (
+                <tr key={o[0]}>
+                  <td>
+                    <b>{o[0]}</b>
+                  </td>
+                  <td>{o[1]}</td>
+                  <td>{o[2]}</td>
+                  <td>
+                    <select onChange={action} defaultValue="PENDING">
+                      {[
+                        "PENDING",
+                        "CONFIRMED",
+                        "PREPARING",
+                        "SHIPPED",
+                        "DELIVERED",
+                        "CANCELLED",
+                        "RETURNED",
+                      ].map((s) => (
+                        <option>{s}</option>
+                      ))}
+                    </select>
+                  </td>
+                  <td>
+                    <button className="table-action" onClick={action}>
+                      VIEW →
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  if (tab === "CUSTOMERS")
+    return (
+      <div className="admin-panel">
+        <div className="panel-toolbar">
+          <div>
+            <small>COMMUNITY</small>
+            <h2>CUSTOMER ACCOUNTS</h2>
+          </div>
+          <input className="admin-search" placeholder="SEARCH CUSTOMERS" />
+        </div>
+        <div className="panel-cards">
+          {[
+            ["MARIAM ADEL", "mariam@email.com", "6 ORDERS"],
+            ["OMAR NABIL", "omar@email.com", "3 ORDERS"],
+            ["SALMA HANY", "salma@email.com", "8 ORDERS"],
+            ["AHMED TAREK", "ahmed@email.com", "2 ORDERS"],
+          ].map((c) => (
+            <article>
+              <i>
+                {c[0]
+                  .split(" ")
+                  .map((x) => x[0])
+                  .join("")}
+              </i>
+              <h3>{c[0]}</h3>
+              <p>{c[1]}</p>
+              <button onClick={action}>{c[2]} →</button>
+            </article>
+          ))}
+        </div>
+      </div>
+    );
+  if (tab === "COLLECTIONS")
+    return (
+      <div className="admin-panel">
+        <div className="panel-toolbar">
+          <div>
+            <small>MERCHANDISING</small>
+            <h2>COLLECTIONS</h2>
+          </div>
+          <button className="dark-btn" onClick={action}>
+            + NEW COLLECTION
+          </button>
+        </div>
+        <div className="panel-cards collections-admin">
+          {[
+            "NEW DROPS",
+            "SUMMER 26",
+            "WINTER COLLECTION",
+            "BEST SELLERS",
+            "LIMITED EDITION",
+          ].map((x, i) => (
+            <article>
+              <small>0{i + 1}</small>
+              <h3>{x}</h3>
+              <p>{[8, 12, 10, 6, 4][i]} PRODUCTS</p>
+              <button onClick={action}>MANAGE →</button>
+            </article>
+          ))}
+        </div>
+      </div>
+    );
+  if (tab === "DISCOUNTS")
+    return (
+      <div className="admin-panel">
+        <div className="panel-toolbar">
+          <div>
+            <small>OFFERS</small>
+            <h2>DISCOUNT CODES</h2>
+          </div>
+          <button className="dark-btn" onClick={action}>
+            + CREATE CODE
+          </button>
+        </div>
+        <div className="orders">
+          <table>
+            <thead>
+              <tr>
+                <th>CODE</th>
+                <th>DISCOUNT</th>
+                <th>USES</th>
+                <th>STATUS</th>
+                <th>ACTION</th>
+              </tr>
+            </thead>
+            <tbody>
+              {[
+                ["CAIRO10", "10%", "48"],
+                ["FIRST26", "260 EGP", "31"],
+                ["FREESHIP", "FREE DELIVERY", "92"],
+              ].map((x) => (
+                <tr>
+                  <td>
+                    <b>{x[0]}</b>
+                  </td>
+                  <td>{x[1]}</td>
+                  <td>{x[2]}</td>
+                  <td>
+                    <i>ACTIVE</i>
+                  </td>
+                  <td>
+                    <button className="table-action" onClick={action}>
+                      EDIT
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    );
+  if (tab === "HOMEPAGE")
+    return (
+      <div className="admin-panel">
+        <div className="panel-toolbar">
+          <div>
+            <small>STOREFRONT</small>
+            <h2>HOMEPAGE CONTENT</h2>
+          </div>
+          <button className="dark-btn" onClick={action}>
+            SAVE CHANGES
+          </button>
+        </div>
+        <div className="settings-card">
+          <label>
+            ANNOUNCEMENT BAR
+            <input defaultValue="FREE DELIVERY OVER 2,500 EGP" />
+          </label>
+          <label>
+            HERO EYEBROW
+            <input defaultValue="SS / 26 — DROP 01" />
+          </label>
+          <label>
+            HERO HEADLINE
+            <input defaultValue="BUILT FOR THE CITY." />
+          </label>
+          <label>
+            FEATURED COLLECTION
+            <select>
+              <option>NEW DROPS</option>
+              <option>BEST SELLERS</option>
+              <option>LIMITED EDITION</option>
+            </select>
+          </label>
+          <button className="outline-admin" onClick={action}>
+            CHANGE HERO IMAGE
+          </button>
+        </div>
+      </div>
+    );
+  return (
+    <div className="admin-panel">
+      <div className="panel-toolbar">
+        <div>
+          <small>STORE CONFIGURATION</small>
+          <h2>SETTINGS</h2>
+        </div>
+        <button className="dark-btn" onClick={action}>
+          SAVE SETTINGS
+        </button>
+      </div>
+      <div className="settings-card">
+        <div className="form-two">
+          <label>
+            STORE NAME
+            <input defaultValue="CAIRO 26" />
+          </label>
+          <label>
+            CURRENCY
+            <select>
+              <option>EGP — EGYPTIAN POUND</option>
+            </select>
+          </label>
+        </div>
+        <label>
+          SUPPORT EMAIL
+          <input defaultValue="hello@cairo26.com" />
+        </label>
+        <label>
+          WHATSAPP NUMBER
+          <input defaultValue="+20 100 000 0026" />
+        </label>
+        <label>
+          STORE LOCATION
+          <input defaultValue="Zamalek, Cairo, Egypt" />
+        </label>
+        <div className="form-two">
+          <label>
+            CAIRO DELIVERY FEE
+            <input defaultValue="80" />
+          </label>
+          <label>
+            FREE DELIVERY FROM
+            <input defaultValue="2500" />
+          </label>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function FAQ() {
+  return (
+    <section className="faq">
+      <small>NEED TO KNOW</small>
+      <h2>FAQ</h2>
+      {[
+        "HOW LONG DOES DELIVERY TAKE?",
+        "CAN I EXCHANGE OR RETURN AN ITEM?",
+        "HOW DO I FIND MY SIZE?",
+        "WHAT PAYMENT METHODS DO YOU ACCEPT?",
+      ].map((q, i) => (
+        <details>
+          <summary>
+            {q}
+            <span>+</span>
+          </summary>
+          <p>
+            {i === 0
+              ? "Cairo orders arrive in 2–3 working days; other governorates in 3–5."
+              : i === 1
+                ? "Yes. Request an exchange within 14 days, with the item unworn and tags attached."
+                : i === 2
+                  ? "Use the size guide on every product page, or message us for a fit check."
+                  : "Cash on delivery and secure card payments are available across Egypt."}
+          </p>
+        </details>
+      ))}
+    </section>
+  );
+}
+function Footer({ go }: { go: (s: string) => void }) {
+  return (
+    <footer>
+      <div>
+        <div className="brand foot-brand">
+          CAIRO<span>26</span>
+        </div>
+        <p>
+          STREETWEAR, BORN IN CAIRO.
+          <br />
+          MADE FOR EVERYWHERE.
+        </p>
+      </div>
+      <div>
+        <b>SHOP</b>
+        {["NEW DROPS", "T-SHIRTS", "HOODIES", "CARGOS", "ACCESSORIES"].map(
+          (x) => (
+            <button onClick={() => go("shop")}>{x}</button>
+          ),
+        )}
+      </div>
+      <div>
+        <b>HELP</b>
+        {[
+          "CONTACT US",
+          "DELIVERY",
+          "EXCHANGES & RETURNS",
+          "SIZE GUIDE",
+          "FAQ",
+        ].map((x) => (
+          <button onClick={() => go("about")}>{x}</button>
+        ))}
+      </div>
+      <div>
+        <b>FIND US</b>
+        <a>INSTAGRAM ↗</a>
+        <a>WHATSAPP ↗</a>
+        <a>HELLO@CAIRO26.COM</a>
+        <p>
+          ZAMALEK, CAIRO
+          <br />
+          EGYPT
+        </p>
+      </div>
+      <div className="copyright">
+        <span>© 2026 CAIRO 26</span>
+        <span>CAIRO — 30.0444° N, 31.2357° E</span>
+      </div>
+    </footer>
+  );
+}
