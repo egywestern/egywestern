@@ -1203,6 +1203,40 @@ function AdminPanel({
   notify: () => void;
 }) {
   const action = () => notify();
+  const [collections, setCollections] = useState([
+    "NEW DROPS",
+    "SUMMER 26",
+    "WINTER COLLECTION",
+    "BEST SELLERS",
+    "LIMITED EDITION",
+  ]);
+  const [managedCollection, setManagedCollection] = useState<string | null>(
+    null,
+  );
+  const [categories, setCategories] = useState([
+    "T-SHIRTS",
+    "HOODIES",
+    "CARGOS",
+    "JACKETS",
+    "CAPS",
+    "ACCESSORIES",
+  ]);
+  const [newCategory, setNewCategory] = useState("");
+  const addCollection = () => {
+    const name = window.prompt("Collection name");
+    if (name?.trim()) {
+      setCollections([...collections, name.trim().toUpperCase()]);
+      notify();
+    }
+  };
+  const addCategory = (e: React.FormEvent) => {
+    e.preventDefault();
+    const name = newCategory.trim().toUpperCase();
+    if (!name || categories.includes(name)) return;
+    setCategories([...categories, name]);
+    setNewCategory("");
+    notify();
+  };
   if (tab === "PRODUCTS")
     return (
       <div className="admin-panel">
@@ -1372,26 +1406,75 @@ function AdminPanel({
             <small>MERCHANDISING</small>
             <h2>COLLECTIONS</h2>
           </div>
-          <button className="dark-btn" onClick={action}>
+          <button className="dark-btn" onClick={addCollection}>
             + NEW COLLECTION
           </button>
         </div>
         <div className="panel-cards collections-admin">
-          {[
-            "NEW DROPS",
-            "SUMMER 26",
-            "WINTER COLLECTION",
-            "BEST SELLERS",
-            "LIMITED EDITION",
-          ].map((x, i) => (
-            <article>
+          {collections.map((x, i) => (
+            <article
+              key={x}
+              className={managedCollection === x ? "selected" : ""}
+            >
               <small>0{i + 1}</small>
               <h3>{x}</h3>
-              <p>{[8, 12, 10, 6, 4][i]} PRODUCTS</p>
-              <button onClick={action}>MANAGE →</button>
+              <p>{[8, 12, 10, 6, 4][i] ?? 0} PRODUCTS</p>
+              <button onClick={() => setManagedCollection(x)}>MANAGE →</button>
             </article>
           ))}
         </div>
+        {managedCollection && (
+          <section className="collection-manager">
+            <div className="panel-toolbar">
+              <div>
+                <small>EDITING COLLECTION</small>
+                <h2>{managedCollection}</h2>
+              </div>
+              <button
+                className="outline-admin"
+                onClick={() => setManagedCollection(null)}
+              >
+                CLOSE
+              </button>
+            </div>
+            <div className="category-editor">
+              <div>
+                <small>PRODUCT CATEGORIES</small>
+                <p>
+                  Add or remove the categories available inside this collection.
+                </p>
+              </div>
+              <form onSubmit={addCategory}>
+                <input
+                  value={newCategory}
+                  onChange={(e) => setNewCategory(e.target.value)}
+                  placeholder="NEW CATEGORY NAME"
+                  required
+                />
+                <button type="submit">+ ADD CATEGORY</button>
+              </form>
+              <div className="category-list">
+                {categories.map((category) => (
+                  <div key={category}>
+                    <span>{category}</span>
+                    <button
+                      aria-label={`Delete ${category}`}
+                      onClick={() => {
+                        setCategories(categories.filter((x) => x !== category));
+                        notify();
+                      }}
+                    >
+                      DELETE
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button className="dark-btn save-collection" onClick={action}>
+                SAVE COLLECTION CHANGES
+              </button>
+            </div>
+          </section>
+        )}
       </div>
     );
   if (tab === "DISCOUNTS")
