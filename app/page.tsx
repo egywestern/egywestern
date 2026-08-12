@@ -1350,6 +1350,7 @@ function AdminPanel({
     [],
   );
   const [newCategory, setNewCategory] = useState("");
+  const [editingProduct, setEditingProduct] = useState<SavedProduct | null>(null);
   useEffect(() => {
     fetch("/api/catalog")
       .then((r) => r.json())
@@ -1388,27 +1389,19 @@ function AdminPanel({
     setNewCategory("");
     notify();
   };
-  const editProduct = async (product: SavedProduct) => {
-    if (!product.id) return;
-    const name = window.prompt("Product name", product.name);
-    if (!name) return;
-    const price = window.prompt("Regular price (EGP)", product.price);
-    if (!price) return;
-    const salePrice = window.prompt(
-      "Sale price (leave empty for no sale)",
-      product.salePrice || "",
-    );
-    const stock = window.prompt("Stock quantity", product.stock);
-    if (stock === null) return;
+  const saveProductEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const product = editingProduct;
+    if (!product?.id || !product.name.trim() || !product.price) return;
     const response = await fetch("/api/products", {
       method: "PUT",
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         ...product,
-        name,
-        price: Number(price),
-        salePrice: salePrice ? Number(salePrice) : null,
-        stock: Number(stock),
+        name: product.name.trim(),
+        price: Number(product.price),
+        salePrice: product.salePrice ? Number(product.salePrice) : null,
+        stock: Number(product.stock),
       }),
     });
     if (!response.ok) return;
@@ -1426,6 +1419,7 @@ function AdminPanel({
           : p,
       ),
     );
+    setEditingProduct(null);
     notify();
   };
   if (tab === "PRODUCTS")
@@ -1454,7 +1448,8 @@ function AdminPanel({
             </thead>
             <tbody>
               {saved.map((p, i) => (
-                <tr key={p.name + i}>
+                <React.Fragment key={p.id || p.name + i}>
+                <tr>
                   <td>
                     <div className="saved-product">
                       <img src={p.image} />
@@ -1472,9 +1467,9 @@ function AdminPanel({
                   <td>
                     <button
                       className="table-action"
-                      onClick={() => editProduct(p)}
+                      onClick={() => setEditingProduct({ ...p })}
                     >
-                      EDIT
+                      UPDATE
                     </button>
                     <button
                       className="table-action danger"
@@ -1492,6 +1487,69 @@ function AdminPanel({
                     </button>
                   </td>
                 </tr>
+                {editingProduct?.id === p.id && (
+                  <tr className="product-edit-row">
+                    <td colSpan={6}>
+                      <form className="product-edit-list" onSubmit={saveProductEdit}>
+                        <label>
+                          <span>PRODUCT NAME</span>
+                          <input
+                            value={editingProduct.name}
+                            onChange={(e) => setEditingProduct({ ...editingProduct, name: e.target.value })}
+                            required
+                          />
+                        </label>
+                        <label>
+                          <span>CATEGORY</span>
+                          <select
+                            value={editingProduct.category}
+                            onChange={(e) => setEditingProduct({ ...editingProduct, category: e.target.value })}
+                          >
+                            {categories.map((category) => (
+                              <option key={category.id || category.name}>{category.name}</option>
+                            ))}
+                          </select>
+                        </label>
+                        <label>
+                          <span>PRICE (EGP)</span>
+                          <input
+                            type="number"
+                            min="0"
+                            value={editingProduct.price}
+                            onChange={(e) => setEditingProduct({ ...editingProduct, price: e.target.value })}
+                            required
+                          />
+                        </label>
+                        <label>
+                          <span>SALE PRICE</span>
+                          <input
+                            type="number"
+                            min="0"
+                            placeholder="NO SALE"
+                            value={editingProduct.salePrice || ""}
+                            onChange={(e) => setEditingProduct({ ...editingProduct, salePrice: e.target.value || null })}
+                          />
+                        </label>
+                        <label>
+                          <span>STOCK</span>
+                          <input
+                            type="number"
+                            min="0"
+                            value={editingProduct.stock}
+                            onChange={(e) => setEditingProduct({ ...editingProduct, stock: e.target.value })}
+                          />
+                        </label>
+                        <div className="product-edit-actions">
+                          <button type="button" className="table-action" onClick={() => setEditingProduct(null)}>
+                            CANCEL
+                          </button>
+                          <button type="submit" className="dark-btn">SAVE UPDATE</button>
+                        </div>
+                      </form>
+                    </td>
+                  </tr>
+                )}
+                </React.Fragment>
               ))}
             </tbody>
           </table>
