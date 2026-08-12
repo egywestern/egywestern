@@ -83,7 +83,32 @@ export default function Cairo26App() {
     [menu, setMenu] = useState(false),
     [category, setCategory] = useState("ALL"),
     [selected, setSelected] = useState<Product | null>(null),
+    [catalog, setCatalog] = useState<Product[]>(products),
     [toast, setToast] = useState("");
+  const toStoreProduct = (p: {
+    id: number;
+    name: string;
+    category: string;
+    price: number;
+    image: string;
+    colors?: string;
+  }) => ({
+    id: 100000 + p.id,
+    name: p.name,
+    cat: p.category,
+    price: Number(p.price),
+    image: p.image,
+    color: p.colors?.split(",")[0] || "Black",
+    badge: "NEW",
+  });
+  useEffect(() => {
+    fetch("/api/products")
+      .then((r) => r.json())
+      .then((data) =>
+        setCatalog([...data.products.map(toStoreProduct), ...products]),
+      )
+      .catch(() => {});
+  }, []);
   const notify = (s: string) => {
     setToast(s);
     setTimeout(() => setToast(""), 2200);
@@ -94,10 +119,8 @@ export default function Cairo26App() {
   };
   const filtered = useMemo(
     () =>
-      category === "ALL"
-        ? products
-        : products.filter((p) => p.cat === category),
-    [category],
+      category === "ALL" ? catalog : catalog.filter((p) => p.cat === category),
+    [category, catalog],
   );
   const go = (v: string) => {
     setView(v);
@@ -149,6 +172,7 @@ export default function Cairo26App() {
             go("product");
           }}
           add={add}
+          items={catalog}
         />
       )}
       {view === "shop" && (
@@ -166,22 +190,26 @@ export default function Cairo26App() {
       {view === "lookbook" && <Lookbook />} {view === "about" && <About />}
       {view === "product" && (
         <ProductPage
-          product={selected || products[0]}
+          product={selected || catalog[0]}
           add={add}
           wish={wish}
           setWish={setWish}
           notify={notify}
         />
       )}
-      {view === "cart" && <Cart cart={cart} setCart={setCart} go={go} />}{" "}
+      {view === "cart" && (
+        <Cart cart={cart} setCart={setCart} go={go} items={catalog} />
+      )}{" "}
       {view === "wishlist" && (
-        <Wishlist wish={wish} setWish={setWish} add={add} />
+        <Wishlist wish={wish} setWish={setWish} add={add} items={catalog} />
       )}
       {view === "checkout" && <Checkout />} {view === "account" && <Account />}{" "}
-      {view === "admin" && <Admin />}
-      {!["admin", "account", "checkout"].includes(view) && (
-        <Footer go={go} />
-      )}{" "}
+      {view === "admin" && (
+        <Admin
+          onProductAdded={(p) => setCatalog([toStoreProduct(p), ...catalog])}
+        />
+      )}
+      {!["admin", "account", "checkout"].includes(view) && <Footer go={go} />}{" "}
       {toast && <div className="toast">✓ {toast}</div>}
     </main>
   );
@@ -191,10 +219,12 @@ function Home({
   go,
   open,
   add,
+  items,
 }: {
   go: (s: string) => void;
   open: (p: Product) => void;
   add: (n: number) => void;
+  items: Product[];
 }) {
   return (
     <>
@@ -229,7 +259,7 @@ function Home({
           </button>
         </div>
         <div className="grid">
-          {products.slice(0, 4).map((p) => (
+          {items.slice(0, 4).map((p) => (
             <Card key={p.id} p={p} open={open} add={add} />
           ))}
         </div>
@@ -552,17 +582,19 @@ function Cart({
   cart,
   setCart,
   go,
+  items,
 }: {
   cart: number[];
   setCart: (n: number[]) => void;
   go: (s: string) => void;
+  items: Product[];
 }) {
   const lines = [...new Set(cart)].map((id) => ({
-    p: products.find((p) => p.id === id)!,
+    p: items.find((p) => p.id === id)!,
     qty: cart.filter((x) => x === id).length,
   }));
   const total = cart.reduce(
-    (s, id) => s + (products.find((p) => p.id === id)?.price || 0),
+    (s, id) => s + (items.find((p) => p.id === id)?.price || 0),
     0,
   );
   return (
@@ -649,21 +681,23 @@ function Wishlist({
   wish,
   setWish,
   add,
+  items,
 }: {
   wish: number[];
   setWish: (n: number[]) => void;
   add: (n: number) => void;
+  items: Product[];
 }) {
-  const items = products.filter((p) => wish.includes(p.id));
+  const wishedItems = items.filter((p) => wish.includes(p.id));
   return (
     <div className="page">
       <div className="page-title">
         <small>SAVED FOR LATER</small>
-        <h1>WISHLIST ({items.length})</h1>
+        <h1>WISHLIST ({wishedItems.length})</h1>
       </div>
-      {items.length ? (
+      {wishedItems.length ? (
         <div className="grid">
-          {items.map((p) => (
+          {wishedItems.map((p) => (
             <Card p={p} open={() => {}} add={add} />
           ))}
         </div>
@@ -813,7 +847,18 @@ function Account() {
   );
 }
 
-function Admin() {
+function Admin({
+  onProductAdded,
+}: {
+  onProductAdded: (product: {
+    id: number;
+    name: string;
+    category: string;
+    price: number;
+    image: string;
+    colors?: string;
+  }) => void;
+}) {
   const adminTabs = [
     "OVERVIEW",
     "PRODUCTS",
@@ -911,6 +956,7 @@ function Admin() {
       return;
     }
     const { product } = await response.json();
+    onProductAdded(product);
     setSaved([
       {
         ...product,
