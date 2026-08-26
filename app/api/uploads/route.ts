@@ -1,4 +1,5 @@
-import { env } from "cloudflare:workers";
+import { mkdir, writeFile } from "node:fs/promises";
+import path from "node:path";
 
 export async function POST(request: Request) {
   const form = await request.formData();
@@ -16,9 +17,12 @@ export async function POST(request: Request) {
       .pop()
       ?.replace(/[^a-z0-9]/gi, "") || "jpg";
   const key = `${crypto.randomUUID()}.${ext}`;
-  await env.MEDIA.put(key, file.stream(), {
-    httpMetadata: { contentType: file.type },
-  });
+  const uploadDirectory = path.join(process.cwd(), "public", "uploads");
+  await mkdir(uploadDirectory, { recursive: true });
+  await writeFile(
+    path.join(uploadDirectory, key),
+    Buffer.from(await file.arrayBuffer()),
+  );
   return Response.json(
     { url: `/api/uploads/${encodeURIComponent(key)}` },
     { status: 201 },

@@ -33,6 +33,24 @@ export async function POST(request: Request) {
     .then((rows) => rows.slice(-1));
   return Response.json({ item }, { status: 201 });
 }
+export async function PUT(request: Request) {
+  const body = (await request.json()) as {
+    type?: string;
+    id?: number;
+    name?: string;
+  };
+  const id = Number(body.id);
+  const name = body.name?.trim().toUpperCase();
+  if (!id || !name || !["category", "collection"].includes(body.type || ""))
+    return Response.json(
+      { error: "Valid type, id and name required" },
+      { status: 400 },
+    );
+  const table = body.type === "category" ? categories : collections;
+  const db = getDb();
+  await db.update(table).set({ name }).where(eq(table.id, id));
+  return Response.json({ item: { id, name } });
+}
 export async function DELETE(request: Request) {
   const url = new URL(request.url),
     id = Number(url.searchParams.get("id")),

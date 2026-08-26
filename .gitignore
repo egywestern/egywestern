@@ -36,6 +36,7 @@ yarn-error.log*
 
 # typescript
 next-env.d.ts
+tsconfig.tsbuildinfo
 /dist/
 /.wrangler/
 /outputs/
@@ -43,3 +44,9 @@ next-env.d.ts
 .devserver.*.log
 /cairo26-site*.tar.gz
 /wrangler.local.jsonc
+
+# uploaded product/site images (user content, not source)
+/public/uploads/
+
+# Claude Code session/config directory
+.claude/
