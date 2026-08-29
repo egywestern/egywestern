@@ -190,13 +190,7 @@ export default function Cairo26App({
     [accountTab, setAccountTab] = useState("OVERVIEW"),
     [selected, setSelected] = useState<Product | null>(null),
     [catalog, setCatalog] = useState<Product[]>([]),
-    [deliveryFees, setDeliveryFees] = useState<DeliveryFee[]>([
-      { city: "CAIRO", fee: 80 },
-      { city: "GIZA", fee: 80 },
-      { city: "ALEXANDRIA", fee: 100 },
-      { city: "DAKAHLIA", fee: 100 },
-      { city: "OTHER GOVERNORATE", fee: 130 },
-    ]),
+    [deliveryFees, setDeliveryFees] = useState<DeliveryFee[]>([]),
     [homepage, setHomepage] = useState<HomepageContent>({
       ticker: [
         "FREE DELIVERY OVER 2,500 EGP",
