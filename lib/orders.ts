@@ -1,5 +1,6 @@
 import { connectDb } from "../db";
 import { nextId, Order, Product, ProductVariant } from "../db/schema";
+import { sendNewOrderEmail } from "./orderEmail";
 
 export class OutOfStockError extends Error {}
 
@@ -81,6 +82,11 @@ export async function createOrder(body: Record<string, unknown>): Promise<OrderR
       created = documents[0].toJSON() as Record<string, unknown>;
     });
     if (!created) throw new Error("Order transaction did not complete");
+    try {
+      await sendNewOrderEmail(created);
+    } catch (emailError) {
+      console.error("Order was saved, but its notification email failed:", emailError);
+    }
     return { order: created };
   } catch (error) {
     if (error instanceof OutOfStockError) return { error: error.message, status: 409 };
