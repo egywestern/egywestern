@@ -938,14 +938,67 @@ function ProductPage({
   const colorImageList = p.colorImages
     ?.filter((c) => c.color.toLowerCase() === selectedColor.toLowerCase())
     .map((c) => c.image);
-  const galleryImages =
-    colorImageList && colorImageList.length ? colorImageList : [p.image, p.image];
+  const galleryImages = [...new Set([p.image, ...(colorImageList || [])].filter(Boolean))];
+  const [galleryIndex, setGalleryIndex] = useState(0);
+  const touchStartX = useRef<number | null>(null);
+  useEffect(() => setGalleryIndex(0), [selectedColor]);
+  const showGalleryImage = (index: number) => {
+    const count = galleryImages.length;
+    if (count) setGalleryIndex((index + count) % count);
+  };
   return (
     <div className="product-page">
-      <div className="product-gallery">
-        {galleryImages.map((src, i) => (
-          <img key={`${src}-${i}`} src={src} alt={p.name} />
-        ))}
+      <div
+        className="product-gallery"
+        onTouchStart={(event) => {
+          touchStartX.current = event.touches[0]?.clientX ?? null;
+        }}
+        onTouchEnd={(event) => {
+          if (touchStartX.current === null) return;
+          const distance = event.changedTouches[0].clientX - touchStartX.current;
+          touchStartX.current = null;
+          if (Math.abs(distance) < 45) return;
+          showGalleryImage(galleryIndex + (distance < 0 ? 1 : -1));
+        }}
+      >
+        <img
+          src={galleryImages[galleryIndex] || p.image}
+          alt={`${p.name} — image ${galleryIndex + 1} of ${galleryImages.length}`}
+        />
+        {galleryImages.length > 1 && (
+          <>
+            <button
+              type="button"
+              className="gallery-arrow gallery-prev"
+              aria-label="Previous product image"
+              onClick={() => showGalleryImage(galleryIndex - 1)}
+            >
+              ←
+            </button>
+            <button
+              type="button"
+              className="gallery-arrow gallery-next"
+              aria-label="Next product image"
+              onClick={() => showGalleryImage(galleryIndex + 1)}
+            >
+              →
+            </button>
+            <div className="gallery-dots" aria-label="Product images">
+              {galleryImages.map((src, index) => (
+                <button
+                  type="button"
+                  key={`${src}-${index}`}
+                  className={index === galleryIndex ? "active" : ""}
+                  aria-label={`Show product image ${index + 1}`}
+                  onClick={() => showGalleryImage(index)}
+                />
+              ))}
+            </div>
+            <span className="gallery-count">
+              {galleryIndex + 1} / {galleryImages.length}
+            </span>
+          </>
+        )}
       </div>
       <div className="product-info">
         <small>{p.cat} / DROP 01</small>
@@ -2249,17 +2302,18 @@ function Admin({
   const now = new Date();
   const currentMonthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const previousMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
-  const ordersThisMonth = orders.filter(
+  const revenueOrders = orders.filter((order) => order.status !== "CANCELLED");
+  const ordersThisMonth = revenueOrders.filter(
     (o) => new Date(o.createdAt) >= currentMonthStart,
   );
-  const ordersLastMonth = orders.filter((o) => {
+  const ordersLastMonth = revenueOrders.filter((o) => {
     const created = new Date(o.createdAt);
     return created >= previousMonthStart && created < currentMonthStart;
   });
   const sumRevenue = (list: AdminOrder[]) =>
     list.reduce((s, o) => s + o.totalValue, 0);
-  const totalRevenue = sumRevenue(orders);
-  const totalOrders = orders.length;
+  const totalRevenue = sumRevenue(revenueOrders);
+  const totalOrders = revenueOrders.length;
   const avgOrderValue = totalOrders ? totalRevenue / totalOrders : 0;
   const revenueThisMonth = sumRevenue(ordersThisMonth);
   const revenueLastMonth = sumRevenue(ordersLastMonth);
@@ -2275,7 +2329,7 @@ function Admin({
   );
   const avgOrderTrend = trendLabel(pctChange(avgThisMonth, avgLastMonth));
   const salesByProduct = new Map<string, { qty: number; revenue: number }>();
-  orders.forEach((o) => {
+  revenueOrders.forEach((o) => {
     o.items.forEach((item) => {
       const entry = salesByProduct.get(item.name) || { qty: 0, revenue: 0 };
       entry.qty += item.qty;
@@ -2299,7 +2353,7 @@ function Admin({
       );
       return { date, total: 0 };
     });
-    orders.forEach((o) => {
+    revenueOrders.forEach((o) => {
       const created = new Date(o.createdAt);
       const dayStart = new Date(
         created.getFullYear(),
