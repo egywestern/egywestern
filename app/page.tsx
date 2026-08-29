@@ -303,21 +303,21 @@ export default function Cairo26App({
         } = data.settings;
         setHomepage((current) => ({
           ...current,
-          image: heroImage || current.image,
-          campaignImage: campaignImage || current.campaignImage,
-          storyImage: storyImage || current.storyImage,
-          aboutImage: aboutImage || current.aboutImage,
+          image: heroImage ?? current.image,
+          campaignImage: campaignImage ?? current.campaignImage,
+          storyImage: storyImage ?? current.storyImage,
+          aboutImage: aboutImage ?? current.aboutImage,
           instagramUrl: instagramUrl ?? current.instagramUrl,
           tiktokUrl: tiktokUrl ?? current.tiktokUrl,
           facebookUrl: facebookUrl ?? current.facebookUrl,
           whatsappNumber: whatsappNumber ?? current.whatsappNumber,
-          storeLocation: storeLocation || current.storeLocation,
+          storeLocation: storeLocation ?? current.storeLocation,
           ticker: Array.isArray(ticker) && ticker.length
             ? [ticker[0] ?? "", ticker[1] ?? "", ticker[2] ?? ""]
             : current.ticker,
-          marquee: marquee || current.marquee,
-          eyebrow: eyebrow || current.eyebrow,
-          headline: headline || current.headline,
+          marquee: marquee ?? current.marquee,
+          eyebrow: eyebrow ?? current.eyebrow,
+          headline: headline ?? current.headline,
           deliveryFee: Number.isFinite(deliveryFee) ? deliveryFee : current.deliveryFee,
           freeDeliveryFrom: Number.isFinite(freeDeliveryFrom)
             ? freeDeliveryFrom
