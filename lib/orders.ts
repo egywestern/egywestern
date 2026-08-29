@@ -4,6 +4,11 @@ import { sendNewOrderEmail } from "./orderEmail";
 
 export class OutOfStockError extends Error {}
 
+const exactText = (value: string) => new RegExp(
+  `^${value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}$`,
+  "i",
+);
+
 type OrderResult = { order: Record<string, unknown> } | { error: string; status: number };
 
 export async function createOrder(body: Record<string, unknown>): Promise<OrderResult> {
@@ -18,13 +23,14 @@ export async function createOrder(body: Record<string, unknown>): Promise<OrderR
   const requestedByProduct = new Map<number, number>();
   const requestedByVariant = new Map<string, { productId: number; color: string; size: string; qty: number }>();
   for (const item of items) {
-    const productId = Number(item.id) - 100000;
+    const storefrontId = Number(item.id);
+    const productId = storefrontId >= 100000 ? storefrontId % 100000 : storefrontId;
     const qty = Number(item.qty) || 0;
     if (productId <= 0 || qty <= 0) continue;
     requestedByProduct.set(productId, (requestedByProduct.get(productId) || 0) + qty);
-    const color = String(item.color || "");
-    const size = String(item.size || "");
-    const key = `${productId}_${color}_${size}`;
+    const color = String(item.color || "").trim();
+    const size = String(item.size || "").trim();
+    const key = `${productId}_${color.toLowerCase()}_${size.toLowerCase()}`;
     requestedByVariant.set(key, {
       productId, color, size, qty: (requestedByVariant.get(key)?.qty || 0) + qty,
     });
@@ -42,11 +48,22 @@ export async function createOrder(body: Record<string, unknown>): Promise<OrderR
       for (const { productId, color, size, qty } of requestedByVariant.values()) {
         if (!productsWithVariants.has(productId)) continue;
         const variant = await ProductVariant.findOneAndUpdate(
-          { productId, color, size, stock: { $gte: qty } }, { $inc: { stock: -qty } }, { new: true, session },
+          {
+            productId,
+            color: exactText(color),
+            size: exactText(size),
+            stock: { $gte: qty },
+          },
+          { $inc: { stock: -qty } },
+          { new: true, session },
         );
         if (!variant) {
           const [current, product] = await Promise.all([
-            ProductVariant.findOne({ productId, color, size }).session(session).lean(),
+            ProductVariant.findOne({
+              productId,
+              color: exactText(color),
+              size: exactText(size),
+            }).session(session).lean(),
             Product.findOne({ id: productId }).session(session).lean(),
           ]);
           throw new OutOfStockError(current

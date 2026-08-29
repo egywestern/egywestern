@@ -54,6 +54,27 @@ body {
 .contact-form textarea { resize: vertical; }
 .contact-form .dark-btn { justify-self: start; }
 .contact-result { font-weight: 800; }
+.order-success {
+  min-height: 75vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+}
+.order-success h1 { max-width: 850px; }
+.success-check {
+  width: 76px;
+  height: 76px;
+  display: grid;
+  place-items: center;
+  margin-bottom: 25px;
+  border-radius: 50%;
+  background: #2e7d46;
+  color: white;
+  font-size: 40px;
+  font-weight: 900;
+}
 .dark-mode {
   --ink: #f5f3ee;
   --paper: #171716;

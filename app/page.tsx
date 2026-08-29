@@ -1622,6 +1622,10 @@ function Checkout({
   notify: (s: string) => void;
   onOrderPlaced: () => void;
 }) {
+  const [placedOrder, setPlacedOrder] = useState<{
+    id: number;
+    total: number;
+  } | null>(null);
   const activeCart = cart.filter((item) => items.some((p) => p.id === item.id));
   const lines = activeCart.reduce<Array<{ p: Product; item: CartItem; qty: number }>>(
     (acc, item) => {
@@ -1717,19 +1721,34 @@ function Checkout({
         headers: { "content-type": "application/json" },
         body: JSON.stringify(orderPayload),
       });
+      const data = await response.json().catch(() => ({}));
       if (!response.ok) {
-        const data = await response.json().catch(() => ({}));
         notify(data.error || "Could not place your order. Please try again.");
         return;
       }
+      setPlacedOrder({ id: Number(data.order?.id || 0), total });
     } catch {
       notify("Could not place your order. Please try again.");
       return;
     }
     onOrderPlaced();
-    notify(`Order confirmed — ${total.toLocaleString("en-US")} EGP`);
-    go("home");
+    notify("ORDER PLACED SUCCESSFULLY");
   };
+  if (placedOrder) {
+    return (
+      <div className="page narrow order-success">
+        <div className="success-check" aria-hidden="true">✓</div>
+        <small>ORDER CONFIRMED</small>
+        <h1>YOUR ORDER WAS PLACED SUCCESSFULLY</h1>
+        {placedOrder.id > 0 && <p>ORDER NUMBER: <b>#{placedOrder.id}</b></p>}
+        <p>TOTAL: <b>{placedOrder.total.toLocaleString("en-US")} EGP</b></p>
+        <p>We received your order and will contact you to confirm delivery.</p>
+        <button className="add" type="button" onClick={() => go("home")}>
+          BACK TO HOME
+        </button>
+      </div>
+    );
+  }
   if (!cart.length) {
     return (
       <div className="page narrow">
