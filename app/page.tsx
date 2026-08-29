@@ -998,7 +998,13 @@ function ProductPage({
   const colorImageList = p.colorImages
     ?.filter((c) => c.color.toLowerCase() === selectedColor.toLowerCase())
     .map((c) => c.image);
-  const galleryImages = [...new Set([p.image, ...(colorImageList || [])].filter(Boolean))];
+  const galleryImages = [
+    ...new Set(
+      colorImageList?.length
+        ? [...colorImageList, p.image].filter(Boolean)
+        : [p.image].filter(Boolean),
+    ),
+  ];
   const [galleryIndex, setGalleryIndex] = useState(0);
   const touchStartX = useRef<number | null>(null);
   useEffect(() => setGalleryIndex(0), [selectedColor]);
