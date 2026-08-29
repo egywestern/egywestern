@@ -738,10 +738,11 @@ function Home({
       </section>
       <section className="marquee">
         <div>
-          <span>{homepage.marquee}</span>
-          <span aria-hidden="true">{homepage.marquee}</span>
-          <span aria-hidden="true">{homepage.marquee}</span>
-          <span aria-hidden="true">{homepage.marquee}</span>
+          {Array.from({ length: 10 }, (_, index) => (
+            <span key={index} aria-hidden={index ? "true" : undefined}>
+              {homepage.marquee}
+            </span>
+          ))}
         </div>
       </section>
       <section className="section">

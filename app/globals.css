@@ -360,15 +360,18 @@ small {
   font-size: 32px;
   font-weight: 950;
   letter-spacing: -1px;
-  animation: move 18s linear infinite;
+  animation: move 7s linear infinite;
 }
 .marquee span {
   display: block;
   padding-right: 5vw;
 }
 @keyframes move {
+  from {
+    transform: translateX(0);
+  }
   to {
-    transform: translateX(-25%);
+    transform: translateX(-10%);
   }
 }
 .section,
