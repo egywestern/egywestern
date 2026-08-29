@@ -17,23 +17,24 @@ const FIELDS = [
 ] as const;
 
 export async function PUT(request: Request) {
-  const body = (await request.json()) as Record<string, unknown>;
-  await connectDb();
-  const existing = await SiteSettings.findOne({ id: 1 }).lean();
-  const values: Record<string, unknown> = Object.fromEntries(
+  try {
+    const body = (await request.json()) as Record<string, unknown>;
+    await connectDb();
+    const existing = await SiteSettings.findOne({ id: 1 }).lean();
+    const values: Record<string, unknown> = Object.fromEntries(
     FIELDS.map((field) => [
       field,
       field in body ? String(body[field] ?? "") : String(existing?.[field] ?? ""),
     ]),
   );
-  if ("ticker" in body) {
+    if ("ticker" in body) {
     values.ticker = Array.isArray(body.ticker)
       ? body.ticker.slice(0, 3).map((message) => String(message))
       : [];
-  } else {
-    values.ticker = existing?.ticker ?? [];
-  }
-  if ("sizeGuide" in body && Array.isArray(body.sizeGuide)) {
+    } else {
+      values.ticker = existing?.ticker ?? [];
+    }
+    if ("sizeGuide" in body && Array.isArray(body.sizeGuide)) {
     values.sizeGuide = body.sizeGuide
       .slice(0, 12)
       .map((row) => {
@@ -48,21 +49,27 @@ export async function PUT(request: Request) {
         };
       })
       .filter((row) => row.size);
-  } else {
-    values.sizeGuide = existing?.sizeGuide ?? [];
+    } else {
+      values.sizeGuide = existing?.sizeGuide ?? [];
+    }
+    for (const field of ["deliveryFee", "freeDeliveryFrom"] as const) {
+      const incoming = Number(body[field]);
+      values[field] = field in body && Number.isFinite(incoming) && incoming >= 0
+        ? incoming
+        : Number(existing?.[field] ?? 0);
+    }
+    const row = await SiteSettings.findOneAndUpdate(
+      { id: 1 }, { $set: values, $setOnInsert: { id: 1 } },
+      { new: true, upsert: true, runValidators: true },
+    );
+    if (!row) throw new Error("MongoDB did not return the saved settings.");
+    return Response.json(
+      { settings: row.toJSON() },
+      { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } },
+    );
+  } catch (error) {
+    console.error("Homepage settings save failed:", error);
+    const message = error instanceof Error ? error.message : "Unknown database error";
+    return Response.json({ error: message }, { status: 500 });
   }
-  for (const field of ["deliveryFee", "freeDeliveryFrom"] as const) {
-    const incoming = Number(body[field]);
-    values[field] = field in body && Number.isFinite(incoming) && incoming >= 0
-      ? incoming
-      : Number(existing?.[field] ?? 0);
-  }
-  const row = await SiteSettings.findOneAndUpdate(
-    { id: 1 }, { $set: values, $setOnInsert: { id: 1 } },
-    { new: true, upsert: true, runValidators: true },
-  );
-  return Response.json(
-    { settings: row.toJSON() },
-    { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } },
-  );
 }

@@ -1354,12 +1354,19 @@ function Cart({
               const lineStock = p.variants?.length
                 ? (variant?.stock ?? 0)
                 : p.stock;
+              const lineImage = p.colorImages?.find(
+                (image) =>
+                  image.color.toLowerCase() === item.color.toLowerCase(),
+              )?.image || p.image;
               return (
               <div
                 className="cart-line"
                 key={`${p.id}-${item.color}-${item.size}`}
               >
-                <img src={p.image} alt={p.name} />
+                <img
+                  src={lineImage}
+                  alt={`${p.name} in ${item.color}`}
+                />
                 <div>
                   <small>{p.cat}</small>
                   <h3>{p.name}</h3>
@@ -3215,15 +3222,16 @@ function AdminPanel({
           sizeGuideNote: homepage.sizeGuideNote,
         }),
       });
-      if (!response.ok) throw new Error("Save failed");
       const data = await response.json();
-      if (!data.settings || data.settings.heroImage !== homepage.image) {
-        throw new Error("Saved data was not confirmed");
-      }
+      if (response.status === 401)
+        throw new Error("Your admin session expired. Log out, log in again, then save.");
+      if (!response.ok)
+        throw new Error(data.error || "The database rejected the homepage changes.");
+      if (!data.settings) throw new Error("MongoDB did not confirm the saved changes.");
       window.localStorage.setItem("homepage-settings-updated", String(Date.now()));
       notify("HOMEPAGE CHANGES SAVED");
-    } catch {
-      alert("Homepage changes could not be saved. Please try again.");
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Homepage changes could not be saved.");
     } finally {
       setSavingHomepage(false);
     }

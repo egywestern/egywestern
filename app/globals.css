@@ -620,6 +620,11 @@ small {
   background: #e7e3dc;
   touch-action: pan-y;
 }
+@media (min-width: 901px) {
+  .product-gallery {
+    background: #000;
+  }
+}
 .product-gallery img {
   display: block;
   width: 100%;
