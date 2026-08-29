@@ -13,7 +13,7 @@ export async function GET() {
 const FIELDS = [
   "heroImage", "campaignImage", "storyImage", "aboutImage", "instagramUrl",
   "tiktokUrl", "facebookUrl", "whatsappNumber", "storeLocation", "marquee",
-  "eyebrow", "headline", "sizeGuideNote",
+  "eyebrow", "headline", "sizeGuideNote", "contactEmail",
 ] as const;
 
 export async function PUT(request: Request) {

@@ -27,6 +27,8 @@ function rateLimitFor(pathname: string, method: string) {
     return { limit: 10, windowMs: 10 * 60 * 1000 };
   if (pathname === "/api/discounts/apply" && method === "POST")
     return { limit: 20, windowMs: 10 * 60 * 1000 };
+  if (pathname === "/api/contact" && method === "POST")
+    return { limit: 5, windowMs: 15 * 60 * 1000 };
   return null;
 }
 
@@ -68,6 +70,7 @@ export const config = {
     "/api/discounts",
     "/api/discounts/:path*",
     "/api/settings",
+    "/api/contact",
     "/api/uploads",
     "/api/admin/login",
     "/api/payments/paymob",

@@ -99,6 +99,7 @@ const settingsSchema = new Schema(
     facebookUrl: { type: String, default: "" },
     whatsappNumber: { type: String, default: "" },
     storeLocation: { type: String, default: "" },
+    contactEmail: { type: String, default: "" },
     ticker: { type: [String], default: [] },
     marquee: { type: String, default: "" },
     eyebrow: { type: String, default: "" },

@@ -93,6 +93,7 @@ type HomepageContent = {
   facebookUrl: string;
   whatsappNumber: string;
   storeLocation: string;
+  contactEmail: string;
   sizeGuide: SizeGuideRow[];
   sizeGuideNote: string;
 };
@@ -220,6 +221,7 @@ export default function Cairo26App({
       facebookUrl: "",
       whatsappNumber: "",
       storeLocation: "Zamalek, Cairo, Egypt",
+      contactEmail: "",
       sizeGuide: [
         { size: "XS", chest: "88–92", length: "66", shoulder: "42" },
         { size: "S", chest: "92–96", length: "68", shoulder: "44" },
@@ -292,6 +294,7 @@ export default function Cairo26App({
           facebookUrl,
           whatsappNumber,
           storeLocation,
+          contactEmail,
           ticker,
           marquee,
           eyebrow,
@@ -312,6 +315,7 @@ export default function Cairo26App({
           facebookUrl: facebookUrl ?? current.facebookUrl,
           whatsappNumber: whatsappNumber ?? current.whatsappNumber,
           storeLocation: storeLocation ?? current.storeLocation,
+          contactEmail: contactEmail ?? current.contactEmail,
           ticker: Array.isArray(ticker) && ticker.length
             ? [ticker[0] ?? "", ticker[1] ?? "", ticker[2] ?? ""]
             : current.ticker,
@@ -508,7 +512,7 @@ export default function Cairo26App({
           <div className="mega-links">
             <button onClick={() => go("about")}>EXCHANGE YOUR ITEM</button>
             <button onClick={() => go("about")}>FAQ</button>
-            <button onClick={() => go("about")}>CONTACT US</button>
+            <button onClick={() => go("contact")}>CONTACT US</button>
           </div>
         </div>
         <div className="actions">
@@ -561,6 +565,7 @@ export default function Cairo26App({
       )}
       {view === "collections" && <Collections goShop={goShop} />} {" "}
       {view === "about" && <About homepage={homepage} />}
+      {view === "contact" && <Contact />}
       {view === "product" && (
         <ProductPage
           product={selected || catalog[0]}
@@ -743,7 +748,6 @@ function Home({
             SHOP THE DROP <span>↗</span>
           </button>
         </div>
-        <div className="side-label">CAIRO, EGYPT — 30.0444° N</div>
       </section>
       <section className="marquee">
         <div>
@@ -1297,6 +1301,74 @@ function About({ homepage }: { homepage: HomepageContent }) {
         </div>
       </div>
       <FAQ />
+    </div>
+  );
+}
+
+function Contact() {
+  const [sending, setSending] = useState(false);
+  const [result, setResult] = useState("");
+  const submitContact = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    setSending(true);
+    setResult("");
+    const form = new FormData(event.currentTarget);
+    try {
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          fullName: form.get("fullName"),
+          email: form.get("email"),
+          subject: form.get("subject"),
+          message: form.get("message"),
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || "Message could not be sent.");
+      event.currentTarget.reset();
+      setResult("MESSAGE SENT SUCCESSFULLY.");
+    } catch (error) {
+      setResult(error instanceof Error ? error.message : "Message could not be sent.");
+    } finally {
+      setSending(false);
+    }
+  };
+  return (
+    <div className="page contact-page">
+      <div className="page-title">
+        <small>WE ARE HERE TO HELP</small>
+        <h1>CONTACT US</h1>
+      </div>
+      <form className="contact-form" onSubmit={submitContact}>
+        <label>
+          FULL NAME *
+          <input name="fullName" required autoComplete="name" />
+        </label>
+        <label>
+          EMAIL *
+          <input name="email" type="email" required placeholder="your@email.com" autoComplete="email" />
+        </label>
+        <label>
+          SUBJECT *
+          <select name="subject" required defaultValue="">
+            <option value="" disabled>SELECT A SUBJECT</option>
+            <option>ORDER QUESTION</option>
+            <option>DELIVERY</option>
+            <option>EXCHANGE OR RETURN</option>
+            <option>PRODUCT QUESTION</option>
+            <option>OTHER</option>
+          </select>
+        </label>
+        <label>
+          MESSAGE *
+          <textarea name="message" required rows={8} />
+        </label>
+        <button className="dark-btn" type="submit" disabled={sending}>
+          {sending ? "SENDING..." : "SEND MESSAGE"}
+        </button>
+        {result && <p className="contact-result" role="status">{result}</p>}
+      </form>
     </div>
   );
 }
@@ -3256,6 +3328,7 @@ function AdminPanel({
         facebookUrl: homepage.facebookUrl,
         whatsappNumber: homepage.whatsappNumber,
         storeLocation: homepage.storeLocation,
+        contactEmail: homepage.contactEmail,
       }),
     });
     notify();
@@ -4578,7 +4651,17 @@ function AdminPanel({
         </div>
         <label>
           SUPPORT EMAIL
-          <input defaultValue="hello@western.com" />
+          <input
+            type="email"
+            value={homepage.contactEmail}
+            placeholder="you@example.com"
+            onChange={(event) =>
+              onHomepageChange((current) => ({
+                ...current,
+                contactEmail: event.target.value,
+              }))
+            }
+          />
         </label>
         <label>
           STORE LOCATION
@@ -4748,7 +4831,7 @@ function Footer({
           "SIZE GUIDE",
           "FAQ",
         ].map((x) => (
-          <button key={x} onClick={() => go("about")}>
+          <button key={x} onClick={() => go(x === "CONTACT US" ? "contact" : "about")}>
             {x}
           </button>
         ))}
