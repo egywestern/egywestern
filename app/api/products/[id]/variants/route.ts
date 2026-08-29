@@ -23,6 +23,8 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
   const colorImages = (Array.isArray(body.colorImages) ? body.colorImages : [])
     .filter((item) => item.color && item.image);
   const stock = variants.reduce((sum, variant) => sum + (Number(variant.stock) || 0), 0);
+  const colors = [...new Set(variants.map((variant) => String(variant.color).trim()).filter(Boolean))];
+  const sizes = [...new Set(variants.map((variant) => String(variant.size).trim()).filter(Boolean))];
   await connectDb();
   await Promise.all([
     ProductVariant.deleteMany({ productId }),
@@ -39,7 +41,10 @@ export async function PUT(request: Request, context: { params: Promise<{ id: str
           id: await nextId("productColorImages"), productId,
           color: String(item.color), image: String(item.image),
         })))) : Promise.resolve(),
-    Product.updateOne({ id: productId }, { stock }),
+    Product.updateOne(
+      { id: productId },
+      { stock, colors: colors.join(","), sizes: sizes.join(",") },
+    ),
   ]);
   const [variantRows, colorImageRows] = await Promise.all([
     ProductVariant.find({ productId }, "-_id -__v").lean(),

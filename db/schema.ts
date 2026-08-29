@@ -105,6 +105,17 @@ const settingsSchema = new Schema(
     headline: { type: String, required: true, default: "" },
     deliveryFee: { type: Number, required: true, default: 0, min: 0 },
     freeDeliveryFrom: { type: Number, required: true, default: 0, min: 0 },
+    sizeGuide: {
+      type: [{
+        _id: false,
+        size: { type: String, required: true },
+        chest: { type: String, required: true },
+        length: { type: String, required: true },
+        shoulder: { type: String, required: true },
+      }],
+      default: [],
+    },
+    sizeGuideNote: { type: String, required: true, default: "" },
   },
   { timestamps: { createdAt: false, updatedAt: true }, toJSON: cleanJson },
 );

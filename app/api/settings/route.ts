@@ -4,13 +4,16 @@ import { SiteSettings } from "../../../db/schema";
 export async function GET() {
   await connectDb();
   const row = await SiteSettings.findOne({ id: 1 });
-  return Response.json({ settings: row?.toJSON() ?? null });
+  return Response.json(
+    { settings: row?.toJSON() ?? null },
+    { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } },
+  );
 }
 
 const FIELDS = [
   "heroImage", "campaignImage", "storyImage", "aboutImage", "instagramUrl",
   "tiktokUrl", "facebookUrl", "whatsappNumber", "storeLocation", "marquee",
-  "eyebrow", "headline",
+  "eyebrow", "headline", "sizeGuideNote",
 ] as const;
 
 export async function PUT(request: Request) {
@@ -30,6 +33,24 @@ export async function PUT(request: Request) {
   } else {
     values.ticker = existing?.ticker ?? [];
   }
+  if ("sizeGuide" in body && Array.isArray(body.sizeGuide)) {
+    values.sizeGuide = body.sizeGuide
+      .slice(0, 12)
+      .map((row) => {
+        const item = row && typeof row === "object"
+          ? row as Record<string, unknown>
+          : {};
+        return {
+          size: String(item.size ?? "").trim(),
+          chest: String(item.chest ?? "").trim(),
+          length: String(item.length ?? "").trim(),
+          shoulder: String(item.shoulder ?? "").trim(),
+        };
+      })
+      .filter((row) => row.size);
+  } else {
+    values.sizeGuide = existing?.sizeGuide ?? [];
+  }
   for (const field of ["deliveryFee", "freeDeliveryFrom"] as const) {
     const incoming = Number(body[field]);
     values[field] = field in body && Number.isFinite(incoming) && incoming >= 0
@@ -40,5 +61,8 @@ export async function PUT(request: Request) {
     { id: 1 }, { $set: values, $setOnInsert: { id: 1 } },
     { new: true, upsert: true, runValidators: true },
   );
-  return Response.json({ settings: row.toJSON() });
+  return Response.json(
+    { settings: row.toJSON() },
+    { headers: { "Cache-Control": "no-store, no-cache, must-revalidate" } },
+  );
 }

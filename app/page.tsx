@@ -93,6 +93,15 @@ type HomepageContent = {
   facebookUrl: string;
   whatsappNumber: string;
   storeLocation: string;
+  sizeGuide: SizeGuideRow[];
+  sizeGuideNote: string;
+};
+
+type SizeGuideRow = {
+  size: string;
+  chest: string;
+  length: string;
+  shoulder: string;
 };
 
 const products: Product[] = [
@@ -211,6 +220,14 @@ export default function Cairo26App({
       facebookUrl: "",
       whatsappNumber: "",
       storeLocation: "Zamalek, Cairo, Egypt",
+      sizeGuide: [
+        { size: "XS", chest: "88–92", length: "66", shoulder: "42" },
+        { size: "S", chest: "92–96", length: "68", shoulder: "44" },
+        { size: "M", chest: "96–100", length: "70", shoulder: "46" },
+        { size: "L", chest: "100–104", length: "72", shoulder: "48" },
+        { size: "XL", chest: "104–108", length: "74", shoulder: "50" },
+      ],
+      sizeGuideNote: "Relaxed street fit. Size down for a tighter look.",
     }),
       [darkMode, setDarkMode] = useState(true),
     [toast, setToast] = useState("");
@@ -227,8 +244,12 @@ export default function Cairo26App({
     colorImages?: ProductColorImage[];
     stock?: number;
   }) => {
-    const colors = p.colors?.split(",").map((c) => c.trim()).filter(Boolean);
-    const sizes = p.sizes?.split(",").map((s) => s.trim()).filter(Boolean);
+    const variantColors = [...new Set((p.variants || []).map((v) => v.color).filter(Boolean))];
+    const variantSizes = [...new Set((p.variants || []).map((v) => v.size).filter(Boolean))];
+    const savedColors = p.colors?.split(",").map((c) => c.trim()).filter(Boolean) || [];
+    const savedSizes = p.sizes?.split(",").map((s) => s.trim()).filter(Boolean) || [];
+    const colors = variantColors.length ? variantColors : savedColors;
+    const sizes = variantSizes.length ? variantSizes : savedSizes;
     return {
       id: 100000 + p.id,
       name: p.name,
@@ -256,7 +277,7 @@ export default function Cairo26App({
       .catch(() => {});
   }, []);
   useEffect(() => {
-    fetch("/api/settings")
+    const loadHomepageSettings = () => fetch("/api/settings", { cache: "no-store" })
       .then((r) => r.json())
       .then((data) => {
         if (!data.settings) return;
@@ -276,6 +297,8 @@ export default function Cairo26App({
           headline,
           deliveryFee,
           freeDeliveryFrom,
+          sizeGuide,
+          sizeGuideNote,
         } = data.settings;
         setHomepage((current) => ({
           ...current,
@@ -298,9 +321,24 @@ export default function Cairo26App({
           freeDeliveryFrom: Number.isFinite(freeDeliveryFrom)
             ? freeDeliveryFrom
             : current.freeDeliveryFrom,
+          sizeGuide: Array.isArray(sizeGuide) && sizeGuide.length
+            ? sizeGuide
+            : current.sizeGuide,
+          sizeGuideNote: sizeGuideNote ?? current.sizeGuideNote,
         }));
       })
       .catch(() => {});
+    void loadHomepageSettings();
+    const refreshAfterAdminSave = (event: StorageEvent) => {
+      if (event.key === "homepage-settings-updated") void loadHomepageSettings();
+    };
+    const refreshOnFocus = () => void loadHomepageSettings();
+    window.addEventListener("storage", refreshAfterAdminSave);
+    window.addEventListener("focus", refreshOnFocus);
+    return () => {
+      window.removeEventListener("storage", refreshAfterAdminSave);
+      window.removeEventListener("focus", refreshOnFocus);
+    };
   }, []);
   useEffect(() => {
     if (!menu) return;
@@ -521,6 +559,8 @@ export default function Cairo26App({
           wish={wish}
           setWish={setWish}
           notify={notify}
+          sizeGuide={homepage.sizeGuide}
+          sizeGuideNote={homepage.sizeGuideNote}
         />
       )}
       {view === "cart" && (
@@ -916,12 +956,16 @@ function ProductPage({
   wish,
   setWish,
   notify,
+  sizeGuide,
+  sizeGuideNote,
 }: {
   product: Product;
   add: (n: number, color?: string, size?: string) => void;
   wish: number[];
   setWish: (n: number[]) => void;
   notify: (s: string) => void;
+  sizeGuide: SizeGuideRow[];
+  sizeGuideNote: string;
 }) {
   const allSizes = ["XS", "S", "M", "L", "XL", "XXL", "XXXL"];
   const availableSizes =
@@ -1147,26 +1191,20 @@ function ProductPage({
                 </tr>
               </thead>
               <tbody>
-                {[
-                  ["XS", "88–92", "66", "42"],
-                  ["S", "92–96", "68", "44"],
-                  ["M", "96–100", "70", "46"],
-                  ["L", "100–104", "72", "48"],
-                  ["XL", "104–108", "74", "50"],
-                ].map(([s, ...rest]) => (
-                  <tr key={s}>
+                {sizeGuide.map((row) => (
+                  <tr key={row.size}>
                     <td>
-                      <b>{s}</b>
+                      <b>{row.size}</b>
                     </td>
-                    {rest.map((v) => (
-                      <td key={v}>{v}</td>
-                    ))}
+                    <td>{row.chest}</td>
+                    <td>{row.length}</td>
+                    <td>{row.shoulder}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
             <p className="size-note">
-              Relaxed street fit. Size down for a tighter look.
+              {sizeGuideNote}
             </p>
           </div>
         </div>
@@ -2295,7 +2333,7 @@ function Admin({
         id?: number;
       }[]
     >([]),
-    [savedNotice, setSavedNotice] = useState(false),
+    [savedNotice, setSavedNotice] = useState(""),
     [imagePreview, setImagePreview] = useState(""),
     [productColor, setProductColor] = useState("#171717"),
     [selectedColors, setSelectedColors] = useState<string[]>(["#171717"]),
@@ -2500,8 +2538,8 @@ function Admin({
       ...saved,
     ]);
     closeForm();
-    setSavedNotice(true);
-    setTimeout(() => setSavedNotice(false), 2500);
+    setSavedNotice("PRODUCT ADDED SUCCESSFULLY");
+    setTimeout(() => setSavedNotice(""), 2500);
   };
   return (
     <div className="admin">
@@ -2555,9 +2593,9 @@ function Admin({
             homepage={homepage}
             onHomepageChange={onHomepageChange}
             addProduct={() => setShowForm(true)}
-            notify={() => {
-              setSavedNotice(true);
-              setTimeout(() => setSavedNotice(false), 2500);
+            notify={(message) => {
+              setSavedNotice(message || "CHANGES SAVED SUCCESSFULLY");
+              setTimeout(() => setSavedNotice(""), 2500);
             }}
             onProductChanged={onProductAdded}
             onProductDeleted={onProductDeleted}
@@ -2853,7 +2891,7 @@ function Admin({
           </div>
         </div>
       )}
-      {savedNotice && <div className="toast">✓ PRODUCT ADDED SUCCESSFULLY</div>}
+      {savedNotice && <div className="toast">✓ {savedNotice}</div>}
     </div>
   );
 }
@@ -2892,7 +2930,7 @@ function AdminPanel({
   saved: SavedProduct[];
   setSaved: (items: SavedProduct[]) => void;
   addProduct: () => void;
-  notify: () => void;
+  notify: (message?: string) => void;
   homepage: HomepageContent;
   onHomepageChange: Dispatch<SetStateAction<HomepageContent>>;
   onProductChanged: (product: {
@@ -3167,10 +3205,17 @@ function AdminPanel({
           headline: homepage.headline,
           deliveryFee: homepage.deliveryFee,
           freeDeliveryFrom: homepage.freeDeliveryFrom,
+          sizeGuide: homepage.sizeGuide,
+          sizeGuideNote: homepage.sizeGuideNote,
         }),
       });
       if (!response.ok) throw new Error("Save failed");
-      notify();
+      const data = await response.json();
+      if (!data.settings || data.settings.heroImage !== homepage.image) {
+        throw new Error("Saved data was not confirmed");
+      }
+      window.localStorage.setItem("homepage-settings-updated", String(Date.now()));
+      notify("HOMEPAGE CHANGES SAVED");
     } catch {
       alert("Homepage changes could not be saved. Please try again.");
     } finally {
@@ -4406,6 +4451,71 @@ function AdminPanel({
                 ? "UPLOADING..."
                 : "CHOOSE IMAGE"}
             </span>
+          </label>
+          <h3>SIZE GUIDE</h3>
+          <p>Edit the measurements customers see on every product page.</p>
+          <div className="size-guide-admin">
+            {homepage.sizeGuide.map((row, index) => (
+              <div className="form-two" key={`${row.size}-${index}`}>
+                {(["size", "chest", "length", "shoulder"] as const).map((field) => (
+                  <label key={field}>
+                    {field.toUpperCase()}{field !== "size" ? " (CM)" : ""}
+                    <input
+                      value={row[field]}
+                      onChange={(event) =>
+                        onHomepageChange((current) => ({
+                          ...current,
+                          sizeGuide: current.sizeGuide.map((item, itemIndex) =>
+                            itemIndex === index
+                              ? { ...item, [field]: event.target.value }
+                              : item,
+                          ),
+                        }))
+                      }
+                    />
+                  </label>
+                ))}
+                <button
+                  type="button"
+                  className="outline-admin"
+                  onClick={() =>
+                    onHomepageChange((current) => ({
+                      ...current,
+                      sizeGuide: current.sizeGuide.filter((_, itemIndex) => itemIndex !== index),
+                    }))
+                  }
+                >
+                  DELETE ROW
+                </button>
+              </div>
+            ))}
+          </div>
+          <button
+            type="button"
+            className="outline-admin"
+            onClick={() =>
+              onHomepageChange((current) => ({
+                ...current,
+                sizeGuide: [
+                  ...current.sizeGuide,
+                  { size: "", chest: "", length: "", shoulder: "" },
+                ],
+              }))
+            }
+          >
+            + ADD SIZE ROW
+          </button>
+          <label>
+            SIZE GUIDE NOTE
+            <input
+              value={homepage.sizeGuideNote}
+              onChange={(event) =>
+                onHomepageChange((current) => ({
+                  ...current,
+                  sizeGuideNote: event.target.value,
+                }))
+              }
+            />
           </label>
           <button
             type="button"
