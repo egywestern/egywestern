@@ -3112,7 +3112,7 @@ function AdminPanel({
       status === "CANCELLED"
         ? data.emailSent
           ? "ORDER CANCELLED — CUSTOMER EMAIL SENT"
-          : "ORDER CANCELLED — EMAIL COULD NOT BE SENT"
+          : `ORDER CANCELLED — ${data.emailError || "EMAIL COULD NOT BE SENT"}`
         : "ORDER STATUS UPDATED",
     );
   };

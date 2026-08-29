@@ -28,13 +28,17 @@ export async function PUT(request: Request) {
   const order = await Order.findOneAndUpdate({ id }, { status }, { new: false }).lean();
   if (!order) return Response.json({ error: "Order not found" }, { status: 404 });
   let emailSent = false;
+  let emailError = "";
   if (status === "CANCELLED" && order.status !== "CANCELLED") {
     try {
       await sendOrderCancelledEmail(order as unknown as Record<string, unknown>);
       emailSent = true;
     } catch (error) {
       console.error("Order cancelled, but customer email failed:", error);
+      emailError = error instanceof Error ? error.message : "Unknown email error";
     }
+  } else if (status === "CANCELLED") {
+    emailError = "This order was already cancelled, so no duplicate email was sent.";
   }
-  return Response.json({ ok: true, emailSent });
+  return Response.json({ ok: true, emailSent, emailError });
 }
