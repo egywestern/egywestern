@@ -1001,7 +1001,7 @@ function ProductPage({
   const galleryImages = [
     ...new Set(
       colorImageList?.length
-        ? [...colorImageList, p.image].filter(Boolean)
+        ? colorImageList.filter(Boolean)
         : [p.image].filter(Boolean),
     ),
   ];
