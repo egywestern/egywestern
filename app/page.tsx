@@ -1310,9 +1310,10 @@ function Contact() {
   const [result, setResult] = useState("");
   const submitContact = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    const contactForm = event.currentTarget;
     setSending(true);
     setResult("");
-    const form = new FormData(event.currentTarget);
+    const form = new FormData(contactForm);
     try {
       const response = await fetch("/api/contact", {
         method: "POST",
@@ -1326,7 +1327,7 @@ function Contact() {
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || "Message could not be sent.");
-      event.currentTarget.reset();
+      contactForm.reset();
       setResult("MESSAGE SENT SUCCESSFULLY.");
     } catch (error) {
       setResult(error instanceof Error ? error.message : "Message could not be sent.");
