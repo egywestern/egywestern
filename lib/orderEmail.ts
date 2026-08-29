@@ -60,3 +60,35 @@ export async function sendNewOrderEmail(order: Record<string, unknown>) {
     throw new Error(`Order email provider rejected the message: ${error}`);
   }
 }
+
+export async function sendOrderCancelledEmail(order: Record<string, unknown>) {
+  const apiKey = process.env.RESEND_API_KEY;
+  const customerEmail = String(order.email ?? "").trim();
+  if (!apiKey || !customerEmail)
+    throw new Error("RESEND_API_KEY or the customer email is missing.");
+  const items = JSON.parse(String(order.items || "[]")) as Array<Record<string, unknown>>;
+  const itemList = items.map((item) =>
+    `<li>${escapeHtml(item.name)} — ${escapeHtml(item.color)} / ${escapeHtml(item.size)} — QTY ${escapeHtml(item.qty)}</li>`,
+  ).join("");
+  const customerName = `${String(order.firstName || "")} ${String(order.lastName || "")}`.trim();
+  const response = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: process.env.CONTACT_FROM_EMAIL || "WESTERN Orders <onboarding@resend.dev>",
+      to: [customerEmail],
+      subject: `Your WESTERN order #${order.id} was cancelled`,
+      html: `
+        <h1>ORDER CANCELLED</h1>
+        <p>Hello ${escapeHtml(customerName || "Customer")},</p>
+        <p>Your WESTERN order <strong>#${escapeHtml(order.id)}</strong> has been cancelled.</p>
+        <ul>${itemList}</ul>
+        <p><strong>Order total:</strong> ${Number(order.total || 0).toLocaleString("en-US")} EGP</p>
+        <p>If you have any questions, reply to this email and our team will help you.</p>`,
+    }),
+  });
+  if (!response.ok) {
+    const error = await response.text();
+    throw new Error(`Cancellation email was rejected: ${error}`);
+  }
+}

@@ -3104,10 +3104,17 @@ function AdminPanel({
       body: JSON.stringify({ id, status }),
     });
     if (!response.ok) return;
+    const data = await response.json();
     setOrders((current) =>
       current.map((o) => (o.id === id ? { ...o, status } : o)),
     );
-    notify();
+    notify(
+      status === "CANCELLED"
+        ? data.emailSent
+          ? "ORDER CANCELLED — CUSTOMER EMAIL SENT"
+          : "ORDER CANCELLED — EMAIL COULD NOT BE SENT"
+        : "ORDER STATUS UPDATED",
+    );
   };
   const displayedProducts: SavedProduct[] = saved.length
     ? saved

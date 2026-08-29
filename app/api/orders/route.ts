@@ -1,6 +1,7 @@
 import { connectDb } from "../../../db";
 import { Order } from "../../../db/schema";
 import { createOrder } from "../../../lib/orders";
+import { sendOrderCancelledEmail } from "../../../lib/orderEmail";
 
 const STATUSES = ["PENDING", "CONFIRMED", "PREPARING", "SHIPPED", "DELIVERED", "CANCELLED", "RETURNED"];
 
@@ -24,6 +25,16 @@ export async function PUT(request: Request) {
   if (!id || !STATUSES.includes(status))
     return Response.json({ error: "Valid id and status required" }, { status: 400 });
   await connectDb();
-  await Order.updateOne({ id }, { status });
-  return Response.json({ ok: true });
+  const order = await Order.findOneAndUpdate({ id }, { status }, { new: false }).lean();
+  if (!order) return Response.json({ error: "Order not found" }, { status: 404 });
+  let emailSent = false;
+  if (status === "CANCELLED" && order.status !== "CANCELLED") {
+    try {
+      await sendOrderCancelledEmail(order as unknown as Record<string, unknown>);
+      emailSent = true;
+    } catch (error) {
+      console.error("Order cancelled, but customer email failed:", error);
+    }
+  }
+  return Response.json({ ok: true, emailSent });
 }
