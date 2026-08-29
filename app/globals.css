@@ -18,6 +18,16 @@ body {
   color: var(--ink);
   font-family: Arial, Helvetica, sans-serif;
 }
+.site-loading {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: #111;
+  color: #f5f3ee;
+  font-size: clamp(36px, 8vw, 96px);
+  font-weight: 950;
+  letter-spacing: -0.06em;
+}
 .dark-mode {
   --ink: #f5f3ee;
   --paper: #171716;

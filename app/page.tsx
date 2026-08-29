@@ -231,6 +231,7 @@ export default function Cairo26App({
     }),
       [darkMode, setDarkMode] = useState(true),
     [toast, setToast] = useState("");
+  const [homepageLoaded, setHomepageLoaded] = useState(false);
   const toStoreProduct = (p: {
     id: number;
     name: string;
@@ -327,7 +328,8 @@ export default function Cairo26App({
           sizeGuideNote: sizeGuideNote ?? current.sizeGuideNote,
         }));
       })
-      .catch(() => {});
+      .catch(() => {})
+      .finally(() => setHomepageLoaded(true));
     void loadHomepageSettings();
     const refreshAfterAdminSave = (event: StorageEvent) => {
       if (event.key === "homepage-settings-updated") void loadHomepageSettings();
@@ -441,6 +443,13 @@ export default function Cairo26App({
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
   const nav = ["SHOP", "COLLECTIONS", "ABOUT"];
+  if (!homepageLoaded) {
+    return (
+      <main className="site-loading" aria-busy="true" aria-label="Loading store">
+        WESTERN
+      </main>
+    );
+  }
   return (
     <main className={darkMode ? "dark-mode" : ""}>
       <div className="ticker">
