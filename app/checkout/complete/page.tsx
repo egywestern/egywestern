@@ -2,6 +2,7 @@
 
 import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
+import Link from "next/link";
 
 function CheckoutCompleteContent() {
   const params = useSearchParams();
@@ -17,9 +18,9 @@ function CheckoutCompleteContent() {
           ? "We're confirming your payment now — you'll receive a confirmation shortly."
           : "Your payment could not be completed. Please try again or choose cash on delivery."}
       </p>
-      <a className="add" href="/" style={{ display: "inline-block", marginTop: 24 }}>
+      <Link className="add" href="/" style={{ display: "inline-block", marginTop: 24 }}>
         BACK TO WESTERN
-      </a>
+      </Link>
     </div>
   );
 }

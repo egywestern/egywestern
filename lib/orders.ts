@@ -1,157 +1,91 @@
-import { and, desc, eq, gte, inArray, sql } from "drizzle-orm";
-import { getDb } from "../db";
-import { orders, productVariants, products } from "../db/schema";
+import { connectDb } from "../db";
+import { nextId, Order, Product, ProductVariant } from "../db/schema";
 
 export class OutOfStockError extends Error {}
 
-export async function createOrder(
-  body: Record<string, unknown>,
-): Promise<{ order: typeof orders.$inferSelect } | { error: string; status: number }> {
+type OrderResult = { order: Record<string, unknown> } | { error: string; status: number };
+
+export async function createOrder(body: Record<string, unknown>): Promise<OrderResult> {
   const email = String(body.email || "").trim();
   const firstName = String(body.firstName || "").trim();
   const phone = String(body.phone || "").trim();
   const items = Array.isArray(body.items)
-    ? (body.items as {
-        id?: number;
-        name?: string;
-        color?: string;
-        size?: string;
-        qty?: number;
-      }[])
-    : [];
+    ? (body.items as { id?: number; name?: string; color?: string; size?: string; qty?: number }[]) : [];
   if (!email || !firstName || !phone || !items.length)
     return { error: "Missing required order fields", status: 400 };
+
   const requestedByProduct = new Map<number, number>();
-  const requestedByVariant = new Map<
-    string,
-    { productId: number; color: string; size: string; qty: number }
-  >();
+  const requestedByVariant = new Map<string, { productId: number; color: string; size: string; qty: number }>();
   for (const item of items) {
     const productId = Number(item.id) - 100000;
     const qty = Number(item.qty) || 0;
     if (productId <= 0 || qty <= 0) continue;
-    requestedByProduct.set(
-      productId,
-      (requestedByProduct.get(productId) || 0) + qty,
-    );
+    requestedByProduct.set(productId, (requestedByProduct.get(productId) || 0) + qty);
     const color = String(item.color || "");
     const size = String(item.size || "");
     const key = `${productId}_${color}_${size}`;
-    const existing = requestedByVariant.get(key);
     requestedByVariant.set(key, {
-      productId,
-      color,
-      size,
-      qty: (existing?.qty || 0) + qty,
+      productId, color, size, qty: (requestedByVariant.get(key)?.qty || 0) + qty,
     });
   }
-  const db = getDb();
+
+  const db = await connectDb();
+  const session = await db.startSession();
   try {
-    const order = await db.transaction(async (tx) => {
-      const productsWithVariants = requestedByProduct.size
-        ? new Set(
-            (
-              await tx
-                .select({ productId: productVariants.productId })
-                .from(productVariants)
-                .where(
-                  inArray(
-                    productVariants.productId,
-                    [...requestedByProduct.keys()],
-                  ),
-                )
-            ).map((row) => row.productId),
-          )
-        : new Set<number>();
+    let created: Record<string, unknown> | null = null;
+    await session.withTransaction(async () => {
+      const productIds = [...requestedByProduct.keys()];
+      const productsWithVariants = new Set<number>(await ProductVariant.distinct(
+        "productId", { productId: { $in: productIds } }, { session },
+      ));
       for (const { productId, color, size, qty } of requestedByVariant.values()) {
         if (!productsWithVariants.has(productId)) continue;
-        const result = await tx
-          .update(productVariants)
-          .set({ stock: sql`${productVariants.stock} - ${qty}` })
-          .where(
-            and(
-              eq(productVariants.productId, productId),
-              eq(productVariants.color, color),
-              eq(productVariants.size, size),
-              gte(productVariants.stock, qty),
-            ),
-          );
-        if (result[0].affectedRows === 0) {
-          const [row] = await tx
-            .select({ stock: productVariants.stock, name: products.name })
-            .from(productVariants)
-            .innerJoin(products, eq(products.id, productVariants.productId))
-            .where(
-              and(
-                eq(productVariants.productId, productId),
-                eq(productVariants.color, color),
-                eq(productVariants.size, size),
-              ),
-            )
-            .limit(1);
-          throw new OutOfStockError(
-            row
-              ? `Only ${row.stock} left of "${row.name}" (${color} / ${size})`
-              : "An item in your bag is no longer available",
-          );
+        const variant = await ProductVariant.findOneAndUpdate(
+          { productId, color, size, stock: { $gte: qty } }, { $inc: { stock: -qty } }, { new: true, session },
+        );
+        if (!variant) {
+          const [current, product] = await Promise.all([
+            ProductVariant.findOne({ productId, color, size }).session(session).lean(),
+            Product.findOne({ id: productId }).session(session).lean(),
+          ]);
+          throw new OutOfStockError(current
+            ? `Only ${current.stock} left of "${product?.name || "item"}" (${color} / ${size})`
+            : "An item in your bag is no longer available");
         }
       }
       for (const [productId, qty] of requestedByProduct) {
-        const result = await tx
-          .update(products)
-          .set({ stock: sql`${products.stock} - ${qty}` })
-          .where(
-            and(
-              eq(products.id, productId),
-              productsWithVariants.has(productId)
-                ? undefined
-                : gte(products.stock, qty),
-            ),
-          );
-        if (
-          !productsWithVariants.has(productId) &&
-          result[0].affectedRows === 0
-        ) {
-          const [row] = await tx
-            .select({ name: products.name, stock: products.stock })
-            .from(products)
-            .where(eq(products.id, productId))
-            .limit(1);
-          throw new OutOfStockError(
-            row
-              ? `Only ${row.stock} left of "${row.name}"`
-              : "An item in your bag is no longer available",
-          );
+        const filter = productsWithVariants.has(productId)
+          ? { id: productId } : { id: productId, stock: { $gte: qty } };
+        const product = await Product.findOneAndUpdate(
+          filter, { $inc: { stock: -qty } }, { new: true, session },
+        );
+        if (!product && !productsWithVariants.has(productId)) {
+          const current = await Product.findOne({ id: productId }).session(session).lean();
+          throw new OutOfStockError(current
+            ? `Only ${current.stock} left of "${current.name}"`
+            : "An item in your bag is no longer available");
         }
       }
-      await tx.insert(orders).values({
-        email,
-        firstName,
-        lastName: body.lastName ? String(body.lastName) : null,
-        phone,
+      const documents = await Order.create([{
+        id: await nextId("orders", session), email, firstName,
+        lastName: body.lastName ? String(body.lastName) : null, phone,
         governorate: body.governorate ? String(body.governorate) : null,
         area: body.area ? String(body.area) : null,
         address: body.address ? String(body.address) : null,
         notes: body.notes ? String(body.notes) : null,
         paymentMethod: String(body.paymentMethod || "cod"),
-        country: String(body.country || "EGYPT"),
-        items: JSON.stringify(items),
-        subtotal: Number(body.subtotal || 0).toFixed(2),
-        discount: Number(body.discount || 0).toFixed(2),
-        delivery: Number(body.delivery || 0).toFixed(2),
-        total: Number(body.total || 0).toFixed(2),
-      });
-      const [inserted] = await tx
-        .select()
-        .from(orders)
-        .orderBy(desc(orders.id))
-        .limit(1);
-      return inserted;
+        country: String(body.country || "EGYPT"), items: JSON.stringify(items),
+        subtotal: Number(body.subtotal || 0), discount: Number(body.discount || 0),
+        delivery: Number(body.delivery || 0), total: Number(body.total || 0),
+      }], { session });
+      created = documents[0].toJSON() as Record<string, unknown>;
     });
-    return { order };
-  } catch (err) {
-    if (err instanceof OutOfStockError)
-      return { error: err.message, status: 409 };
-    throw err;
+    if (!created) throw new Error("Order transaction did not complete");
+    return { order: created };
+  } catch (error) {
+    if (error instanceof OutOfStockError) return { error: error.message, status: 409 };
+    throw error;
+  } finally {
+    await session.endSession();
   }
 }

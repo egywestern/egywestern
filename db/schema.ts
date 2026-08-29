@@ -1,112 +1,161 @@
-import {
-  boolean,
-  decimal,
-  int,
-  mysqlTable,
-  text,
-  timestamp,
-  varchar,
-} from "drizzle-orm/mysql-core";
+import mongoose, { type ClientSession, Schema } from "mongoose";
 
-export const categories = mysqlTable("categories", {
-  id: int("id").autoincrement().primaryKey(),
-  name: varchar("name", { length: 255 }).notNull().unique(),
-  createdAt: timestamp("created_at")
-    .notNull()
-    .defaultNow(),
-});
+const cleanJson = {
+  versionKey: false,
+  transform: (_doc: unknown, value: Record<string, unknown>) => {
+    delete value._id;
+    return value;
+  },
+};
 
-export const collections = mysqlTable("collections", {
-  id: int("id").autoincrement().primaryKey(),
-  name: varchar("name", { length: 255 }).notNull().unique(),
-  createdAt: timestamp("created_at")
-    .notNull()
-    .defaultNow(),
-});
+const counterSchema = new Schema(
+  { _id: { type: String, required: true }, sequence: { type: Number, default: 0 } },
+  { versionKey: false },
+);
 
-export const products = mysqlTable("products", {
-  id: int("id").autoincrement().primaryKey(),
-  name: varchar("name", { length: 255 }).notNull(),
-  category: varchar("category", { length: 255 }).notNull(),
-  collection: varchar("collection", { length: 255 }).notNull().default("NEW DROPS"),
-  price: decimal("price", { precision: 10, scale: 2 }).notNull(),
-  salePrice: decimal("sale_price", { precision: 10, scale: 2 }),
-  stock: int("stock").notNull().default(0),
-  image: text("image").notNull(),
-  sizes: text("sizes").notNull(),
-  colors: text("colors").notNull(),
-  description: text("description").notNull(),
-  createdAt: timestamp("created_at")
-    .notNull()
-    .defaultNow(),
-});
+export const Counter =
+  mongoose.models.Counter || mongoose.model("Counter", counterSchema);
 
-export const productVariants = mysqlTable("product_variants", {
-  id: int("id").autoincrement().primaryKey(),
-  productId: int("product_id").notNull(),
-  color: varchar("color", { length: 50 }).notNull(),
-  size: varchar("size", { length: 20 }).notNull(),
-  stock: int("stock").notNull().default(0),
-});
+export async function nextId(name: string, session?: ClientSession) {
+  const counter = await Counter.findByIdAndUpdate(
+    name,
+    { $inc: { sequence: 1 } },
+    { new: true, upsert: true, setDefaultsOnInsert: true, session },
+  );
+  return counter.sequence as number;
+}
 
-export const productColorImages = mysqlTable("product_color_images", {
-  id: int("id").autoincrement().primaryKey(),
-  productId: int("product_id").notNull(),
-  color: varchar("color", { length: 50 }).notNull(),
-  image: text("image").notNull(),
-});
+const namedSchema = new Schema(
+  {
+    id: { type: Number, required: true, unique: true, index: true },
+    name: { type: String, required: true, unique: true, trim: true },
+  },
+  { timestamps: { createdAt: true, updatedAt: false }, toJSON: cleanJson, suppressReservedKeysWarning: true },
+);
 
-export const siteSettings = mysqlTable("site_settings", {
-  id: int("id").primaryKey().default(1),
-  heroImage: text("hero_image").notNull(),
-  campaignImage: text("campaign_image").notNull(),
-  storyImage: text("story_image").notNull(),
-  aboutImage: text("about_image").notNull(),
-  instagramUrl: varchar("instagram_url", { length: 255 }).notNull().default(""),
-  tiktokUrl: varchar("tiktok_url", { length: 255 }).notNull().default(""),
-  facebookUrl: varchar("facebook_url", { length: 255 }).notNull().default(""),
-  whatsappNumber: varchar("whatsapp_number", { length: 50 }).notNull().default(""),
-  storeLocation: varchar("store_location", { length: 255 }).notNull().default(""),
-  updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
-});
+export const Category =
+  mongoose.models.Category || mongoose.model("Category", namedSchema);
+export const Collection =
+  mongoose.models.Collection || mongoose.model("Collection", namedSchema);
 
-export const discountCodes = mysqlTable("discount_codes", {
-  id: int("id").autoincrement().primaryKey(),
-  code: varchar("code", { length: 50 }).notNull().unique(),
-  type: varchar("type", { length: 20 }).notNull(),
-  value: decimal("value", { precision: 10, scale: 2 }),
-  active: boolean("active").notNull().default(true),
-  uses: int("uses").notNull().default(0),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+const productSchema = new Schema(
+  {
+    id: { type: Number, required: true, unique: true, index: true },
+    name: { type: String, required: true, trim: true },
+    category: { type: String, required: true },
+    collection: { type: String, required: true, default: "NEW DROPS" },
+    price: { type: Number, required: true, min: 0 },
+    salePrice: { type: Number, default: null, min: 0 },
+    stock: { type: Number, required: true, default: 0, min: 0 },
+    image: { type: String, required: true },
+    sizes: { type: String, default: "" },
+    colors: { type: String, default: "" },
+    description: { type: String, default: "" },
+  },
+  { timestamps: { createdAt: true, updatedAt: false }, toJSON: cleanJson, suppressReservedKeysWarning: true },
+);
 
-export const pendingPayments = mysqlTable("pending_payments", {
-  id: int("id").autoincrement().primaryKey(),
-  payload: text("payload").notNull(),
-  status: varchar("status", { length: 20 }).notNull().default("PENDING"),
-  paymobOrderId: varchar("paymob_order_id", { length: 50 }),
-  createdAt: timestamp("created_at").notNull().defaultNow(),
-});
+export const Product =
+  mongoose.models.Product || mongoose.model("Product", productSchema);
 
-export const orders = mysqlTable("orders", {
-  id: int("id").autoincrement().primaryKey(),
-  email: varchar("email", { length: 255 }).notNull(),
-  firstName: varchar("first_name", { length: 255 }).notNull(),
-  lastName: varchar("last_name", { length: 255 }),
-  phone: varchar("phone", { length: 50 }).notNull(),
-  governorate: varchar("governorate", { length: 100 }),
-  area: varchar("area", { length: 255 }),
-  address: text("address"),
-  notes: text("notes"),
-  paymentMethod: varchar("payment_method", { length: 50 }).notNull(),
-  country: varchar("country", { length: 100 }).notNull(),
-  items: text("items").notNull(),
-  subtotal: decimal("subtotal", { precision: 10, scale: 2 }).notNull(),
-  discount: decimal("discount", { precision: 10, scale: 2 }).notNull().default("0"),
-  delivery: decimal("delivery", { precision: 10, scale: 2 }).notNull().default("0"),
-  total: decimal("total", { precision: 10, scale: 2 }).notNull(),
-  status: varchar("status", { length: 50 }).notNull().default("PENDING"),
-  createdAt: timestamp("created_at")
-    .notNull()
-    .defaultNow(),
-});
+const variantSchema = new Schema(
+  {
+    id: { type: Number, required: true, unique: true, index: true },
+    productId: { type: Number, required: true, index: true },
+    color: { type: String, required: true },
+    size: { type: String, required: true },
+    stock: { type: Number, required: true, default: 0, min: 0 },
+  },
+  { versionKey: false, toJSON: cleanJson },
+);
+variantSchema.index({ productId: 1, color: 1, size: 1 }, { unique: true });
+
+export const ProductVariant =
+  mongoose.models.ProductVariant || mongoose.model("ProductVariant", variantSchema);
+
+const colorImageSchema = new Schema(
+  {
+    id: { type: Number, required: true, unique: true, index: true },
+    productId: { type: Number, required: true, index: true },
+    color: { type: String, required: true },
+    image: { type: String, required: true },
+  },
+  { versionKey: false, toJSON: cleanJson },
+);
+
+export const ProductColorImage =
+  mongoose.models.ProductColorImage ||
+  mongoose.model("ProductColorImage", colorImageSchema);
+
+const settingsSchema = new Schema(
+  {
+    id: { type: Number, required: true, unique: true, default: 1 },
+    heroImage: { type: String, required: true, default: "" },
+    campaignImage: { type: String, required: true, default: "" },
+    storyImage: { type: String, required: true, default: "" },
+    aboutImage: { type: String, required: true, default: "" },
+    instagramUrl: { type: String, required: true, default: "" },
+    tiktokUrl: { type: String, required: true, default: "" },
+    facebookUrl: { type: String, required: true, default: "" },
+    whatsappNumber: { type: String, required: true, default: "" },
+    storeLocation: { type: String, required: true, default: "" },
+  },
+  { timestamps: { createdAt: false, updatedAt: true }, toJSON: cleanJson },
+);
+
+export const SiteSettings =
+  mongoose.models.SiteSettings || mongoose.model("SiteSettings", settingsSchema);
+
+const discountSchema = new Schema(
+  {
+    id: { type: Number, required: true, unique: true, index: true },
+    code: { type: String, required: true, unique: true, uppercase: true, trim: true },
+    type: { type: String, required: true, enum: ["percent", "amount", "free_shipping"] },
+    value: { type: Number, default: null, min: 0 },
+    active: { type: Boolean, required: true, default: true },
+    uses: { type: Number, required: true, default: 0 },
+  },
+  { timestamps: { createdAt: true, updatedAt: false }, toJSON: cleanJson },
+);
+
+export const DiscountCode =
+  mongoose.models.DiscountCode || mongoose.model("DiscountCode", discountSchema);
+
+const pendingPaymentSchema = new Schema(
+  {
+    id: { type: Number, required: true, unique: true, index: true },
+    payload: { type: String, required: true },
+    status: { type: String, required: true, default: "PENDING" },
+    paymobOrderId: { type: String, default: null },
+  },
+  { timestamps: { createdAt: true, updatedAt: false }, toJSON: cleanJson },
+);
+
+export const PendingPayment =
+  mongoose.models.PendingPayment ||
+  mongoose.model("PendingPayment", pendingPaymentSchema);
+
+const orderSchema = new Schema(
+  {
+    id: { type: Number, required: true, unique: true, index: true },
+    email: { type: String, required: true },
+    firstName: { type: String, required: true },
+    lastName: { type: String, default: null },
+    phone: { type: String, required: true },
+    governorate: { type: String, default: null },
+    area: { type: String, default: null },
+    address: { type: String, default: null },
+    notes: { type: String, default: null },
+    paymentMethod: { type: String, required: true },
+    country: { type: String, required: true },
+    items: { type: String, required: true },
+    subtotal: { type: Number, required: true, min: 0 },
+    discount: { type: Number, required: true, default: 0, min: 0 },
+    delivery: { type: Number, required: true, default: 0, min: 0 },
+    total: { type: Number, required: true, min: 0 },
+    status: { type: String, required: true, default: "PENDING" },
+  },
+  { timestamps: { createdAt: true, updatedAt: false }, toJSON: cleanJson },
+);
+
+export const Order = mongoose.models.Order || mongoose.model("Order", orderSchema);

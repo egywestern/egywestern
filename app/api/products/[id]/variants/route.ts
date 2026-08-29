@@ -1,31 +1,18 @@
-import { eq } from "drizzle-orm";
-import { getDb } from "../../../../../db";
-import { productColorImages, productVariants, products } from "../../../../../db/schema";
+import { connectDb } from "../../../../../db";
+import { nextId, Product, ProductColorImage, ProductVariant } from "../../../../../db/schema";
 
-export async function GET(
-  _request: Request,
-  context: { params: Promise<{ id: string }> },
-) {
-  const { id } = await context.params;
-  const productId = Number(id);
-  const db = getDb();
-  const variants = await db
-    .select()
-    .from(productVariants)
-    .where(eq(productVariants.productId, productId));
-  const colorImages = await db
-    .select()
-    .from(productColorImages)
-    .where(eq(productColorImages.productId, productId));
+export async function GET(_request: Request, context: { params: Promise<{ id: string }> }) {
+  const productId = Number((await context.params).id);
+  await connectDb();
+  const [variants, colorImages] = await Promise.all([
+    ProductVariant.find({ productId }, "-_id -__v").lean(),
+    ProductColorImage.find({ productId }, "-_id -__v").lean(),
+  ]);
   return Response.json({ variants, colorImages });
 }
 
-export async function PUT(
-  request: Request,
-  context: { params: Promise<{ id: string }> },
-) {
-  const { id } = await context.params;
-  const productId = Number(id);
+export async function PUT(request: Request, context: { params: Promise<{ id: string }> }) {
+  const productId = Number((await context.params).id);
   if (!productId)
     return Response.json({ error: "Valid product id required" }, { status: 400 });
   const body = (await request.json()) as {
@@ -33,46 +20,30 @@ export async function PUT(
     colorImages?: { color: string; image: string }[];
   };
   const variants = Array.isArray(body.variants) ? body.variants : [];
-  const colorImages = (
-    Array.isArray(body.colorImages) ? body.colorImages : []
-  ).filter((c) => c.color && c.image);
-  const stock = variants.reduce((sum, v) => sum + (Number(v.stock) || 0), 0);
-  const db = getDb();
-  await db.transaction(async (tx) => {
-    await tx
-      .delete(productVariants)
-      .where(eq(productVariants.productId, productId));
-    if (variants.length) {
-      await tx.insert(productVariants).values(
-        variants.map((v) => ({
-          productId,
-          color: String(v.color),
-          size: String(v.size),
-          stock: Number(v.stock) || 0,
-        })),
-      );
-    }
-    await tx
-      .delete(productColorImages)
-      .where(eq(productColorImages.productId, productId));
-    if (colorImages.length) {
-      await tx.insert(productColorImages).values(
-        colorImages.map((c) => ({
-          productId,
-          color: String(c.color),
-          image: String(c.image),
-        })),
-      );
-    }
-    await tx.update(products).set({ stock }).where(eq(products.id, productId));
-  });
-  const variantRows = await db
-    .select()
-    .from(productVariants)
-    .where(eq(productVariants.productId, productId));
-  const colorImageRows = await db
-    .select()
-    .from(productColorImages)
-    .where(eq(productColorImages.productId, productId));
+  const colorImages = (Array.isArray(body.colorImages) ? body.colorImages : [])
+    .filter((item) => item.color && item.image);
+  const stock = variants.reduce((sum, variant) => sum + (Number(variant.stock) || 0), 0);
+  await connectDb();
+  await Promise.all([
+    ProductVariant.deleteMany({ productId }),
+    ProductColorImage.deleteMany({ productId }),
+  ]);
+  await Promise.all([
+    variants.length
+      ? ProductVariant.insertMany(await Promise.all(variants.map(async (variant) => ({
+          id: await nextId("productVariants"), productId,
+          color: String(variant.color), size: String(variant.size), stock: Number(variant.stock) || 0,
+        })))) : Promise.resolve(),
+    colorImages.length
+      ? ProductColorImage.insertMany(await Promise.all(colorImages.map(async (item) => ({
+          id: await nextId("productColorImages"), productId,
+          color: String(item.color), image: String(item.image),
+        })))) : Promise.resolve(),
+    Product.updateOne({ id: productId }, { stock }),
+  ]);
+  const [variantRows, colorImageRows] = await Promise.all([
+    ProductVariant.find({ productId }, "-_id -__v").lean(),
+    ProductColorImage.find({ productId }, "-_id -__v").lean(),
+  ]);
   return Response.json({ variants: variantRows, colorImages: colorImageRows, stock });
 }

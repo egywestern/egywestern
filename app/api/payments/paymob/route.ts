@@ -1,6 +1,5 @@
-import { desc, eq } from "drizzle-orm";
-import { getDb } from "../../../../db";
-import { pendingPayments } from "../../../../db/schema";
+import { connectDb } from "../../../../db";
+import { nextId, PendingPayment } from "../../../../db/schema";
 import { countryCode } from "../../../../lib/paymob";
 
 export async function POST(request: Request) {
@@ -24,16 +23,12 @@ export async function POST(request: Request) {
       { status: 500 },
     );
 
-  const db = getDb();
-  await db.insert(pendingPayments).values({
+  await connectDb();
+  const pending = await PendingPayment.create({
+    id: await nextId("pendingPayments"),
     payload: JSON.stringify(body),
     status: "PENDING",
   });
-  const [pending] = await db
-    .select()
-    .from(pendingPayments)
-    .orderBy(desc(pendingPayments.id))
-    .limit(1);
   const amountCents = Math.round(total * 100);
   const merchantOrderId = `WESTERN-${pending.id}`;
 
@@ -69,10 +64,9 @@ export async function POST(request: Request) {
     const paymobOrderId = orderData.id;
     if (!paymobOrderId) throw new Error("Paymob order registration failed");
 
-    await db
-      .update(pendingPayments)
-      .set({ paymobOrderId: String(paymobOrderId) })
-      .where(eq(pendingPayments.id, pending.id));
+    await PendingPayment.updateOne(
+      { id: pending.id }, { paymobOrderId: String(paymobOrderId) },
+    );
 
     const [first, ...rest] = firstName.split(" ");
     const lastName = String(body.lastName || rest.join(" ") || "NA");
@@ -116,10 +110,7 @@ export async function POST(request: Request) {
       iframeUrl: `https://accept.paymob.com/api/acceptance/iframes/${iframeId}?payment_token=${paymentToken}`,
     });
   } catch {
-    await db
-      .update(pendingPayments)
-      .set({ status: "FAILED" })
-      .where(eq(pendingPayments.id, pending.id));
+    await PendingPayment.updateOne({ id: pending.id }, { status: "FAILED" });
     return Response.json(
       { error: "Could not start card payment. Please try again." },
       { status: 502 },

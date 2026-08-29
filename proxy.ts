@@ -2,8 +2,6 @@ import { NextRequest, NextResponse } from "next/server";
 import { SESSION_COOKIE, verifySessionToken } from "./lib/auth";
 import { checkRateLimit, getClientIp } from "./lib/rateLimit";
 
-export const runtime = "nodejs";
-
 function isProtected(pathname: string, method: string) {
   if (pathname === "/api/discounts/apply") return false;
   if (pathname.startsWith("/api/discounts")) return true;
@@ -32,7 +30,7 @@ function rateLimitFor(pathname: string, method: string) {
   return null;
 }
 
-export async function middleware(request: NextRequest) {
+export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
   const method = request.method;
 

@@ -7,10 +7,10 @@ async function readHomepageHtml() {
   return readFile(url, "utf8");
 }
 
-test("server-renders the CAIRO 26 storefront", async () => {
+test("server-renders the WESTERN storefront", async () => {
   const html = await readHomepageHtml();
 
-  assert.match(html, /<title>CAIRO 26 — Built for the City<\/title>/);
-  assert.match(html, /CAIRO 26/);
+  assert.match(html, /<title>WESTERN — Built for the City<\/title>/);
+  assert.match(html, /WESTERN/);
   assert.doesNotMatch(html, /codex-preview|_sites-preview|react-loading-skeleton/);
 });

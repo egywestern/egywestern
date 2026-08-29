@@ -1,17 +1,40 @@
-import mysql from "mysql2/promise";
-import { drizzle, type MySql2Database } from "drizzle-orm/mysql2";
-import * as schema from "./schema";
+import mongoose from "mongoose";
 
-let db: MySql2Database<typeof schema> | undefined;
+type MongooseCache = {
+  connection: typeof mongoose | null;
+  promise: Promise<typeof mongoose> | null;
+};
 
-export function getDb() {
-  if (db) return db;
-  const url = process.env.DATABASE_URL;
-  if (!url) throw new Error("DATABASE_URL is not configured.");
-  const pool = mysql.createPool({ uri: url, timezone: "Z" });
-  pool.on("connection", (connection) => {
-    connection.query("SET time_zone = '+00:00'");
+const globalWithMongoose = globalThis as typeof globalThis & {
+  mongooseCache?: MongooseCache;
+};
+
+const cache = globalWithMongoose.mongooseCache ?? {
+  connection: null,
+  promise: null,
+};
+
+globalWithMongoose.mongooseCache = cache;
+
+export async function connectDb() {
+  if (cache.connection) return cache.connection;
+
+  const uri = process.env.MONGODB_URI;
+  if (!uri) {
+    throw new Error("MONGODB_URI is not configured. Add your MongoDB Atlas connection string.");
+  }
+
+  cache.promise ??= mongoose.connect(uri, {
+    bufferCommands: false,
+    serverSelectionTimeoutMS: 10_000,
   });
-  db = drizzle(pool, { schema, mode: "default" });
-  return db;
+
+  try {
+    cache.connection = await cache.promise;
+  } catch (error) {
+    cache.promise = null;
+    throw error;
+  }
+
+  return cache.connection;
 }

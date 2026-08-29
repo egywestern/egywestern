@@ -179,7 +179,7 @@ export default function Cairo26App({
     [freeShipping, setFreeShipping] = useState(false),
     [accountTab, setAccountTab] = useState("OVERVIEW"),
     [selected, setSelected] = useState<Product | null>(null),
-    [catalog, setCatalog] = useState<Product[]>(products),
+    [catalog, setCatalog] = useState<Product[]>([]),
     [deliveryFees, setDeliveryFees] = useState<DeliveryFee[]>([
       { city: "CAIRO", fee: 80 },
       { city: "GIZA", fee: 80 },
@@ -246,15 +246,13 @@ export default function Cairo26App({
     };
   };
   const cartRef = useRef(cart);
-  cartRef.current = cart;
+  useEffect(() => {
+    cartRef.current = cart;
+  }, [cart]);
   useEffect(() => {
     fetch("/api/products")
       .then((r) => r.json())
-      .then((data) =>
-        setCatalog(
-          data.products.length ? data.products.map(toStoreProduct) : products,
-        ),
-      )
+      .then((data) => setCatalog(data.products.map(toStoreProduct)))
       .catch(() => {});
   }, []);
   useEffect(() => {
@@ -2241,7 +2239,7 @@ function Admin({
       ),
     0,
   );
-  const liveProductCount = catalog.length || saved.length || products.length;
+  const liveProductCount = catalog.length || saved.length;
   const pctChange = (current: number, previous: number) => {
     if (previous === 0) return current === 0 ? 0 : 100;
     return ((current - previous) / previous) * 100;
@@ -2412,7 +2410,8 @@ function Admin({
       body: JSON.stringify(payload),
     });
     if (!response.ok) {
-      alert("Product could not be saved.");
+      const result = await response.json().catch(() => null);
+      alert(result?.error || "Product could not be saved.");
       return;
     }
     const { product } = await response.json();
@@ -3346,7 +3345,8 @@ function AdminPanel({
                             method: "DELETE",
                           });
                           if (!response.ok) {
-                            alert("Could not delete this product. Please try again.");
+                            const result = await response.json().catch(() => null);
+                            alert(result?.error || "Could not delete this product. Please try again.");
                             return;
                           }
                         } catch {
@@ -3669,7 +3669,7 @@ function AdminPanel({
               </article>
             ))
           ) : (
-            <p>No customers yet — they'll show up here once orders come in.</p>
+            <p>No customers yet — they&apos;ll show up here once orders come in.</p>
           )}
         </div>
         {viewCustomer && (
