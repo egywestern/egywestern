@@ -51,7 +51,20 @@ export async function POST(request: Request) {
             color: String(item.color), image: String(item.image),
           })))) : Promise.resolve(),
     ]);
-    return Response.json({ product: product.toJSON() }, { status: 201 });
+    const [variantRows, colorImageRows] = await Promise.all([
+      ProductVariant.find({ productId: id }, "-_id -__v").lean(),
+      ProductColorImage.find({ productId: id }, "-_id -__v").lean(),
+    ]);
+    return Response.json(
+      {
+        product: {
+          ...product.toJSON(),
+          variants: variantRows,
+          colorImages: colorImageRows,
+        },
+      },
+      { status: 201 },
+    );
   } catch (error) {
     console.error("Product creation failed:", error);
     const message = error instanceof Error && error.name === "ValidationError"

@@ -223,9 +223,9 @@ export default function Cairo26App({
     image: string;
     colors?: string;
     sizes?: string;
-    stock?: number;
     variants?: ProductVariant[];
     colorImages?: ProductColorImage[];
+    stock?: number;
   }) => {
     const colors = p.colors?.split(",").map((c) => c.trim()).filter(Boolean);
     const sizes = p.sizes?.split(",").map((s) => s.trim()).filter(Boolean);
@@ -2179,6 +2179,10 @@ function Admin({
     salePrice?: number | null;
     image: string;
     colors?: string;
+    sizes?: string;
+    variants?: ProductVariant[];
+    colorImages?: ProductColorImage[];
+    stock?: number;
   }) => void;
   onProductDeleted: (id: number) => void;
 }) {
@@ -2883,6 +2887,10 @@ function AdminPanel({
     salePrice?: number | null;
     image: string;
     colors?: string;
+    sizes?: string;
+    variants?: ProductVariant[];
+    colorImages?: ProductColorImage[];
+    stock?: number;
   }) => void;
   onProductDeleted: (id: number) => void;
   orders: AdminOrder[];
@@ -3052,12 +3060,35 @@ function AdminPanel({
       alert("Could not save variants.");
       return;
     }
-    const { stock } = await response.json();
+    const { stock, variants: savedVariants, colorImages: savedColorImages } =
+      await response.json();
     setSaved(
       saved.map((p) =>
-        p.id === managingVariants.id ? { ...p, stock: String(stock) } : p,
+        p.id === managingVariants.id
+          ? {
+              ...p,
+              stock: String(stock),
+              colors: variantSelectedColors.join(","),
+            }
+          : p,
       ),
     );
+    const currentProduct = saved.find((p) => p.id === managingVariants.id);
+    if (currentProduct) {
+      onProductChanged({
+        ...currentProduct,
+        id: managingVariants.id,
+        price: Number(currentProduct.price),
+        salePrice: currentProduct.salePrice
+          ? Number(currentProduct.salePrice)
+          : null,
+        stock,
+        colors: variantSelectedColors.join(","),
+        sizes: [...new Set(Object.values(variantColorSizes).flat())].join(","),
+        variants: savedVariants,
+        colorImages: savedColorImages,
+      });
+    }
     setManagingVariants(null);
     notify();
   };
