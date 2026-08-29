@@ -99,6 +99,12 @@ const settingsSchema = new Schema(
     facebookUrl: { type: String, required: true, default: "" },
     whatsappNumber: { type: String, required: true, default: "" },
     storeLocation: { type: String, required: true, default: "" },
+    ticker: { type: [String], required: true, default: [] },
+    marquee: { type: String, required: true, default: "" },
+    eyebrow: { type: String, required: true, default: "" },
+    headline: { type: String, required: true, default: "" },
+    deliveryFee: { type: Number, required: true, default: 0, min: 0 },
+    freeDeliveryFrom: { type: Number, required: true, default: 0, min: 0 },
   },
   { timestamps: { createdAt: false, updatedAt: true }, toJSON: cleanJson },
 );

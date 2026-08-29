@@ -270,6 +270,12 @@ export default function Cairo26App({
           facebookUrl,
           whatsappNumber,
           storeLocation,
+          ticker,
+          marquee,
+          eyebrow,
+          headline,
+          deliveryFee,
+          freeDeliveryFrom,
         } = data.settings;
         setHomepage((current) => ({
           ...current,
@@ -282,6 +288,16 @@ export default function Cairo26App({
           facebookUrl: facebookUrl ?? current.facebookUrl,
           whatsappNumber: whatsappNumber ?? current.whatsappNumber,
           storeLocation: storeLocation || current.storeLocation,
+          ticker: Array.isArray(ticker) && ticker.length
+            ? [ticker[0] ?? "", ticker[1] ?? "", ticker[2] ?? ""]
+            : current.ticker,
+          marquee: marquee || current.marquee,
+          eyebrow: eyebrow || current.eyebrow,
+          headline: headline || current.headline,
+          deliveryFee: Number.isFinite(deliveryFee) ? deliveryFee : current.deliveryFee,
+          freeDeliveryFrom: Number.isFinite(freeDeliveryFrom)
+            ? freeDeliveryFrom
+            : current.freeDeliveryFrom,
         }));
       })
       .catch(() => {});
@@ -2954,6 +2970,7 @@ function AdminPanel({
   const [uploadingField, setUploadingField] = useState<
     "image" | "campaignImage" | "storyImage" | "aboutImage" | null
   >(null);
+  const [savingHomepage, setSavingHomepage] = useState(false);
   const [collections, setCollections] = useState<
     { id?: number; name: string }[]
   >([
@@ -3133,18 +3150,32 @@ function AdminPanel({
         e.target.value = "";
       }
     };
-  const saveBackgroundImages = async () => {
-    await fetch("/api/settings", {
-      method: "PUT",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        heroImage: homepage.image,
-        campaignImage: homepage.campaignImage,
-        storyImage: homepage.storyImage,
-        aboutImage: homepage.aboutImage,
-      }),
-    });
-    notify();
+  const saveHomepageChanges = async () => {
+    setSavingHomepage(true);
+    try {
+      const response = await fetch("/api/settings", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          heroImage: homepage.image,
+          campaignImage: homepage.campaignImage,
+          storyImage: homepage.storyImage,
+          aboutImage: homepage.aboutImage,
+          ticker: homepage.ticker,
+          marquee: homepage.marquee,
+          eyebrow: homepage.eyebrow,
+          headline: homepage.headline,
+          deliveryFee: homepage.deliveryFee,
+          freeDeliveryFrom: homepage.freeDeliveryFrom,
+        }),
+      });
+      if (!response.ok) throw new Error("Save failed");
+      notify();
+    } catch {
+      alert("Homepage changes could not be saved. Please try again.");
+    } finally {
+      setSavingHomepage(false);
+    }
   };
   const saveSocialSettings = async () => {
     await fetch("/api/settings", {
@@ -4176,8 +4207,13 @@ function AdminPanel({
             <small>STOREFRONT</small>
             <h2>HOMEPAGE CONTENT</h2>
           </div>
-          <button className="dark-btn" onClick={saveBackgroundImages}>
-            SAVE CHANGES
+          <button
+            type="button"
+            className="dark-btn"
+            onClick={saveHomepageChanges}
+            disabled={savingHomepage || uploadingField !== null}
+          >
+            {savingHomepage ? "SAVING..." : "SAVE CHANGES"}
           </button>
         </div>
         <div className="settings-card">
@@ -4371,6 +4407,14 @@ function AdminPanel({
                 : "CHOOSE IMAGE"}
             </span>
           </label>
+          <button
+            type="button"
+            className="dark-btn"
+            onClick={saveHomepageChanges}
+            disabled={savingHomepage || uploadingField !== null}
+          >
+            {savingHomepage ? "SAVING..." : "SAVE ALL HOMEPAGE CHANGES"}
+          </button>
         </div>
       </div>
     );
