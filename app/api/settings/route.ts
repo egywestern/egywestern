@@ -20,6 +20,7 @@ const FIELDS = [
   "tiktokUrl",
   "facebookUrl",
   "whatsappNumber",
+  "storeLocation",
 ] as const;
 
 export async function PUT(request: Request) {

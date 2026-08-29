@@ -50,6 +50,13 @@
       "when": 1787775397948,
       "tag": "0006_bored_inhumans",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1788022013201,
+      "tag": "0007_clammy_forgotten_one",
+      "breakpoints": true
     }
   ]
 }

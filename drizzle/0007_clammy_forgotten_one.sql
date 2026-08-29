@@ -1,0 +1,1 @@
+ALTER TABLE `site_settings` ADD `store_location` varchar(255) DEFAULT '' NOT NULL;

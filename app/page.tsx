@@ -92,6 +92,7 @@ type HomepageContent = {
   tiktokUrl: string;
   facebookUrl: string;
   whatsappNumber: string;
+  storeLocation: string;
 };
 
 const products: Product[] = [
@@ -209,6 +210,7 @@ export default function Cairo26App({
       tiktokUrl: "",
       facebookUrl: "",
       whatsappNumber: "",
+      storeLocation: "Zamalek, Cairo, Egypt",
     }),
       [darkMode, setDarkMode] = useState(true),
     [toast, setToast] = useState("");
@@ -269,6 +271,7 @@ export default function Cairo26App({
           tiktokUrl,
           facebookUrl,
           whatsappNumber,
+          storeLocation,
         } = data.settings;
         setHomepage((current) => ({
           ...current,
@@ -280,6 +283,7 @@ export default function Cairo26App({
           tiktokUrl: tiktokUrl ?? current.tiktokUrl,
           facebookUrl: facebookUrl ?? current.facebookUrl,
           whatsappNumber: whatsappNumber ?? current.whatsappNumber,
+          storeLocation: storeLocation || current.storeLocation,
         }));
       })
       .catch(() => {});
@@ -3067,6 +3071,7 @@ function AdminPanel({
         tiktokUrl: homepage.tiktokUrl,
         facebookUrl: homepage.facebookUrl,
         whatsappNumber: homepage.whatsappNumber,
+        storeLocation: homepage.storeLocation,
       }),
     });
     notify();
@@ -3335,11 +3340,20 @@ function AdminPanel({
                     <button
                       className="table-action danger"
                       onClick={async () => {
-                        if (p.id)
-                          await fetch(`/api/products?id=${p.id}`, {
+                        if (!p.id) return;
+                        try {
+                          const response = await fetch(`/api/products?id=${p.id}`, {
                             method: "DELETE",
                           });
-                        if (p.id) onProductDeleted(p.id);
+                          if (!response.ok) {
+                            alert("Could not delete this product. Please try again.");
+                            return;
+                          }
+                        } catch {
+                          alert("Could not delete this product. Please try again.");
+                          return;
+                        }
+                        onProductDeleted(p.id);
                         setSaved(saved.filter((_, x) => x !== i));
                         notify();
                       }}
@@ -4305,7 +4319,15 @@ function AdminPanel({
         </label>
         <label>
           STORE LOCATION
-          <input defaultValue="Zamalek, Cairo, Egypt" />
+          <input
+            value={homepage.storeLocation}
+            onChange={(e) =>
+              onHomepageChange((current) => ({
+                ...current,
+                storeLocation: e.target.value,
+              }))
+            }
+          />
         </label>
         <h3>SOCIAL LINKS</h3>
         <label>
@@ -4434,7 +4456,7 @@ function Footer({
 }) {
   return (
     <footer>
-      <div>
+      <div className="foot-brand-col">
         <div className="brand foot-brand">
           WESTERN
         </div>
@@ -4496,9 +4518,21 @@ function Footer({
         )}
         <a href="mailto:hello@western.com">HELLO@WESTERN.COM</a>
         <p>
-          ZAMALEK, CAIRO
-          <br />
-          EGYPT
+          {(() => {
+            const parts = homepage.storeLocation.split(",").map((s) => s.trim());
+            const country = parts.length > 1 ? parts.pop() : null;
+            return (
+              <>
+                {parts.join(", ").toUpperCase()}
+                {country && (
+                  <>
+                    <br />
+                    {country.toUpperCase()}
+                  </>
+                )}
+              </>
+            );
+          })()}
         </p>
       </div>
       <div className="copyright">

@@ -66,6 +66,7 @@ export const siteSettings = mysqlTable("site_settings", {
   tiktokUrl: varchar("tiktok_url", { length: 255 }).notNull().default(""),
   facebookUrl: varchar("facebook_url", { length: 255 }).notNull().default(""),
   whatsappNumber: varchar("whatsapp_number", { length: 50 }).notNull().default(""),
+  storeLocation: varchar("store_location", { length: 255 }).notNull().default(""),
   updatedAt: timestamp("updated_at").notNull().defaultNow().onUpdateNow(),
 });
 
