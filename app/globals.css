@@ -1397,6 +1397,50 @@ td i {
   color: #777;
   margin-top: 3px;
 }
+.print-only { display: none; }
+@media print {
+  body * {
+    visibility: hidden !important;
+  }
+  .order-modal,
+  .order-modal * {
+    visibility: visible !important;
+  }
+  .order-modal-backdrop {
+    position: absolute;
+    inset: 0;
+    display: block;
+    padding: 0;
+    background: white;
+  }
+  .order-modal {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    max-width: none;
+    max-height: none;
+    overflow: visible;
+    border: 0;
+    box-shadow: none;
+    background: white;
+    color: black;
+    padding: 24px;
+  }
+  .print-only { display: block; }
+  .print-order-brand {
+    margin-bottom: 28px;
+    font-size: 32px;
+    font-weight: 950;
+    letter-spacing: -2px;
+  }
+  .order-modal .modal-head > button,
+  .print-order-button {
+    display: none !important;
+  }
+  @page {
+    margin: 14mm;
+  }
+}
 .admin-logo {
   font-size: 24px;
   font-weight: 950;

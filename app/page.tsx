@@ -3899,6 +3899,7 @@ function AdminPanel({
               className="order-modal"
               onMouseDown={(e) => e.stopPropagation()}
             >
+              <div className="print-only print-order-brand">WESTERN</div>
               <div className="modal-head">
                 <div>
                   <small>ORDER DETAILS</small>
@@ -3952,6 +3953,13 @@ function AdminPanel({
               <p><b>DELIVERY</b>{viewOrder.delivery.toLocaleString("en-US")} EGP</p>
               <p><b>TOTAL</b>{viewOrder.total}</p>
               <p><b>STATUS</b>{viewOrder.status}</p>
+              <button
+                type="button"
+                className="dark-btn print-order-button"
+                onClick={() => window.print()}
+              >
+                PRINT ORDER
+              </button>
             </div>
           </div>
         )}
