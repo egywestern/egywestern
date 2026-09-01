@@ -560,6 +560,7 @@ export default function Cairo26App({
       {view === "collections" && <Collections goShop={goShop} />} {" "}
       {view === "about" && <About homepage={homepage} />}
       {view === "contact" && <Contact />}
+      {view === "privacy" && <PrivacyPolicy />}
       {view === "product" && (
         <ProductPage
           product={selected || catalog[0]}
@@ -1364,6 +1365,50 @@ function Contact() {
         </button>
         {result && <p className="contact-result" role="status">{result}</p>}
       </form>
+    </div>
+  );
+}
+
+function PrivacyPolicy() {
+  return (
+    <div className="page narrow legal-page">
+      <div className="page-title">
+        <small>WESTERN / LEGAL</small>
+        <h1>PRIVACY POLICY</h1>
+      </div>
+      <p>Last updated: September 1, 2026</p>
+      <h2>INFORMATION WE COLLECT</h2>
+      <p>
+        We collect the information you provide when placing an order or contacting us,
+        including your name, email, phone number, delivery address, and order details.
+      </p>
+      <h2>HOW WE USE YOUR INFORMATION</h2>
+      <p>
+        We use your information to process and deliver orders, provide customer support,
+        send order updates, prevent fraud, and improve the WESTERN store.
+      </p>
+      <h2>PAYMENTS</h2>
+      <p>
+        Payment information is processed by our payment providers. WESTERN does not store
+        complete card details on this website.
+      </p>
+      <h2>SHARING YOUR INFORMATION</h2>
+      <p>
+        We share only the information needed with service providers such as delivery,
+        payment, hosting, database, and email providers. We do not sell your personal data.
+      </p>
+      <h2>DATA RETENTION AND SECURITY</h2>
+      <p>
+        We keep information only as long as reasonably necessary for orders, support,
+        security, and legal obligations, and use appropriate safeguards to protect it.
+      </p>
+      <h2>YOUR CHOICES</h2>
+      <p>
+        You may contact us to request access, correction, or deletion of your personal
+        information, subject to applicable legal and business record requirements.
+      </p>
+      <h2>CONTACT US</h2>
+      <p>For privacy questions, use the Contact Us page on this website.</p>
     </div>
   );
 }
@@ -4851,8 +4896,20 @@ function Footer({
           "EXCHANGES & RETURNS",
           "SIZE GUIDE",
           "FAQ",
+          "PRIVACY POLICY",
         ].map((x) => (
-          <button key={x} onClick={() => go(x === "CONTACT US" ? "contact" : "about")}>
+          <button
+            key={x}
+            onClick={() =>
+              go(
+                x === "CONTACT US"
+                  ? "contact"
+                  : x === "PRIVACY POLICY"
+                    ? "privacy"
+                    : "about",
+              )
+            }
+          >
             {x}
           </button>
         ))}
