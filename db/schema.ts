@@ -100,6 +100,14 @@ const settingsSchema = new Schema(
     whatsappNumber: { type: String, default: "" },
     storeLocation: { type: String, default: "" },
     contactEmail: { type: String, default: "" },
+    deliveryFees: {
+      type: [{
+        _id: false,
+        city: { type: String, default: "" },
+        fee: { type: Number, default: 0, min: 0 },
+      }],
+      default: [],
+    },
     ticker: { type: [String], default: [] },
     marquee: { type: String, default: "" },
     eyebrow: { type: String, default: "" },

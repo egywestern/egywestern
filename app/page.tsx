@@ -297,6 +297,7 @@ export default function Cairo26App({
           freeDeliveryFrom,
           sizeGuide,
           sizeGuideNote,
+          deliveryFees: savedDeliveryFees,
         } = data.settings;
         setHomepage((current) => ({
           ...current,
@@ -325,6 +326,7 @@ export default function Cairo26App({
             : current.sizeGuide,
           sizeGuideNote: sizeGuideNote ?? current.sizeGuideNote,
         }));
+        if (Array.isArray(savedDeliveryFees)) setDeliveryFees(savedDeliveryFees);
       })
       .catch(() => {})
       .finally(() => setHomepageLoaded(true));
@@ -340,6 +342,14 @@ export default function Cairo26App({
       window.removeEventListener("focus", refreshOnFocus);
     };
   }, []);
+  useEffect(() => {
+    if (
+      deliveryFees.length > 0 &&
+      !deliveryFees.some((item) => item.city === deliveryGovernorate)
+    ) {
+      setDeliveryGovernorate(deliveryFees[0].city);
+    }
+  }, [deliveryFees, deliveryGovernorate]);
   useEffect(() => {
     if (!menu) return;
     const closeOnOutsideClick = (event: MouseEvent) => {
@@ -3559,18 +3569,37 @@ function AdminPanel({
     setNewCategory("");
     notify();
   };
-  const addDeliveryFee = (e: React.FormEvent) => {
+  const saveDeliveryFees = async (fees: DeliveryFee[]) => {
+    const response = await fetch("/api/settings", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ deliveryFees: fees }),
+    });
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok)
+      throw new Error(data.error || "Delivery fees could not be saved.");
+    return Array.isArray(data.settings?.deliveryFees)
+      ? data.settings.deliveryFees as DeliveryFee[]
+      : fees;
+  };
+  const addDeliveryFee = async (e: React.FormEvent) => {
     e.preventDefault();
     const city = newDeliveryCity.trim().toUpperCase();
     const fee = Number(newDeliveryFee);
     if (!city || !Number.isFinite(fee) || fee < 0) return;
-    onDeliveryFeesChange((current) => [
-      ...current.filter((item) => item.city !== city),
+    const next = [
+      ...deliveryFees.filter((item) => item.city !== city),
       { city, fee },
-    ]);
-    setNewDeliveryCity("");
-    setNewDeliveryFee("");
-    notify();
+    ];
+    try {
+      const savedFees = await saveDeliveryFees(next);
+      onDeliveryFeesChange(savedFees);
+      setNewDeliveryCity("");
+      setNewDeliveryFee("");
+      notify("DELIVERY FEE SAVED");
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Delivery fee could not be saved.");
+    }
   };
   const saveProductEdit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -4401,11 +4430,16 @@ function AdminPanel({
                 <strong>{item.fee.toLocaleString("en-US")} EGP</strong>
                 <button
                   type="button"
-                  onClick={() =>
-                    onDeliveryFeesChange((current) =>
-                      current.filter((fee) => fee.city !== item.city),
-                    )
-                  }
+                  onClick={async () => {
+                    const next = deliveryFees.filter((fee) => fee.city !== item.city);
+                    try {
+                      const savedFees = await saveDeliveryFees(next);
+                      onDeliveryFeesChange(savedFees);
+                      notify("DELIVERY FEE DELETED");
+                    } catch (error) {
+                      alert(error instanceof Error ? error.message : "Delivery fee could not be deleted.");
+                    }
+                  }}
                 >
                   DELETE
                 </button>

@@ -52,6 +52,22 @@ export async function PUT(request: Request) {
     } else {
       values.sizeGuide = existing?.sizeGuide ?? [];
     }
+    if ("deliveryFees" in body && Array.isArray(body.deliveryFees)) {
+      values.deliveryFees = body.deliveryFees
+        .slice(0, 100)
+        .map((row) => {
+          const item = row && typeof row === "object"
+            ? row as Record<string, unknown>
+            : {};
+          return {
+            city: String(item.city ?? "").trim().toUpperCase(),
+            fee: Number(item.fee),
+          };
+        })
+        .filter((row) => row.city && Number.isFinite(row.fee) && row.fee >= 0);
+    } else {
+      values.deliveryFees = existing?.deliveryFees ?? [];
+    }
     for (const field of ["deliveryFee", "freeDeliveryFrom"] as const) {
       const incoming = Number(body[field]);
       values[field] = field in body && Number.isFinite(incoming) && incoming >= 0
