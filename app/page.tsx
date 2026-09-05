@@ -1675,6 +1675,27 @@ function Checkout({
     id: number;
     total: number;
   } | null>(null);
+  const [checkoutDeliveryFees, setCheckoutDeliveryFees] = useState<DeliveryFee[]>(deliveryFees);
+  const [deliveryOptionsLoading, setDeliveryOptionsLoading] = useState(deliveryFees.length === 0);
+  useEffect(() => {
+    if (deliveryFees.length) {
+      setCheckoutDeliveryFees(deliveryFees);
+      setDeliveryOptionsLoading(false);
+      return;
+    }
+    fetch(`/api/settings?checkout=${Date.now()}`, { cache: "no-store" })
+      .then((response) => response.json())
+      .then((data) => {
+        const fees = Array.isArray(data.settings?.deliveryFees)
+          ? data.settings.deliveryFees as DeliveryFee[]
+          : [];
+        setCheckoutDeliveryFees(fees);
+        if (fees.length && !fees.some((item) => item.city === governorate))
+          setGovernorate(fees[0].city);
+      })
+      .catch(() => setCheckoutDeliveryFees([]))
+      .finally(() => setDeliveryOptionsLoading(false));
+  }, [deliveryFees, governorate, setGovernorate]);
   const activeCart = cart.filter((item) => items.some((p) => p.id === item.id));
   const lines = activeCart.reduce<Array<{ p: Product; item: CartItem; qty: number }>>(
     (acc, item) => {
@@ -1698,7 +1719,7 @@ function Checkout({
     0,
   );
   const percentOff = Math.round(subtotal * (discountPercent / 100));
-  const cityFee = deliveryFees.find((item) => item.city === governorate)?.fee ?? deliveryFee;
+  const cityFee = checkoutDeliveryFees.find((item) => item.city === governorate)?.fee ?? deliveryFee;
   const delivery =
     subtotal === 0
       ? 0
@@ -1837,10 +1858,17 @@ function Checkout({
           <h2>SHIPPING ADDRESS</h2>
           <select
             name="governorate"
-            value={governorate}
+            value={checkoutDeliveryFees.some((item) => item.city === governorate) ? governorate : ""}
             onChange={(e) => setGovernorate(e.target.value)}
+            required
+            disabled={deliveryOptionsLoading || checkoutDeliveryFees.length === 0}
           >
-            {deliveryFees.map((item) => (
+            {checkoutDeliveryFees.length === 0 && (
+              <option value="">
+                {deliveryOptionsLoading ? "LOADING DELIVERY AREAS..." : "NO DELIVERY AREAS AVAILABLE"}
+              </option>
+            )}
+            {checkoutDeliveryFees.map((item) => (
               <option key={item.city} value={item.city}>
                 {item.city}
               </option>
@@ -1863,7 +1891,11 @@ function Checkout({
             <input type="radio" name="pay" value="card" /> CREDIT / DEBIT
             CARD <span>VISA • MASTERCARD</span>
           </label>
-          <button className="add" type="submit">
+          <button
+            className="add"
+            type="submit"
+            disabled={deliveryOptionsLoading || checkoutDeliveryFees.length === 0}
+          >
             PLACE ORDER — {total.toLocaleString("en-US")} EGP
           </button>
         </form>
