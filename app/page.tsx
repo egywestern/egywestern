@@ -168,6 +168,14 @@ const products: Product[] = [
 
 const icons = { search: "⌕", bag: "🛒", heart: "♡", user: "○" };
 
+const EGYPT_GOVERNORATES = [
+  "ALEXANDRIA", "ASWAN", "ASYUT", "BEHEIRA", "BENI SUEF", "CAIRO",
+  "DAKAHLIA", "DAMIETTA", "FAYOUM", "GHARBIA", "GIZA", "ISMAILIA",
+  "KAFR EL SHEIKH", "LUXOR", "MATROUH", "MINYA", "MONUFIA",
+  "NEW VALLEY", "NORTH SINAI", "PORT SAID", "QALYUBIA", "QENA",
+  "RED SEA", "SHARQIA", "SOHAG", "SOUTH SINAI", "SUEZ",
+];
+
 export default function Cairo26App({
   initialView = "home",
 }: {
@@ -1165,6 +1173,13 @@ function ProductPage({
         >
           ♡ {wish.includes(p.id) ? "SAVED" : "ADD TO WISHLIST"}
         </button>
+        <button
+          type="button"
+          className="outline-admin print-product-button"
+          onClick={() => window.print()}
+        >
+          PRINT PRODUCT
+        </button>
         <details open>
           <summary>DESCRIPTION</summary>
           <p>
@@ -1854,8 +1869,8 @@ function Checkout({
             placeholder="PHONE NUMBER (+20)"
             required
           />
-          <small>02 / DELIVERY</small>
-          <h2>SHIPPING ADDRESS</h2>
+          <small>02 / DELIVERY AREA</small>
+          <h2>SELECT GOVERNORATE</h2>
           <select
             name="governorate"
             value={checkoutDeliveryFees.some((item) => item.city === governorate) ? governorate : ""}
@@ -1870,10 +1885,12 @@ function Checkout({
             )}
             {checkoutDeliveryFees.map((item) => (
               <option key={item.city} value={item.city}>
-                {item.city}
+                {item.city} — {item.fee.toLocaleString("en-US")} EGP
               </option>
             ))}
           </select>
+          <small>03 / SHIPPING</small>
+          <h2>SHIPPING ADDRESS</h2>
           <input name="area" placeholder="AREA / DISTRICT" required />
           <input
             name="address"
@@ -1881,7 +1898,7 @@ function Checkout({
             required
           />
           <textarea name="notes" placeholder="DELIVERY NOTES (OPTIONAL)" />
-          <small>03 / PAYMENT</small>
+          <small>04 / PAYMENT</small>
           <h2>PAYMENT METHOD</h2>
           <label className="pay">
             <input type="radio" defaultChecked name="pay" value="cod" /> CASH
@@ -4437,12 +4454,18 @@ function AdminPanel({
         <div className="settings-card category-editor">
           <p>Add a delivery fee for each governorate / city you deliver to.</p>
           <form onSubmit={addDeliveryFee}>
-            <input
+            <select
               value={newDeliveryCity}
               onChange={(e) => setNewDeliveryCity(e.target.value)}
-              placeholder="GOVERNORATE / CITY"
               required
-            />
+            >
+              <option value="" disabled>SELECT GOVERNORATE</option>
+              {EGYPT_GOVERNORATES.map((governorateName) => (
+                <option key={governorateName} value={governorateName}>
+                  {governorateName}
+                </option>
+              ))}
+            </select>
             <input
               type="number"
               min="0"

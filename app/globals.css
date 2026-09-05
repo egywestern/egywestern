@@ -1403,7 +1403,9 @@ td i {
     visibility: hidden !important;
   }
   .order-modal,
-  .order-modal * {
+  .order-modal *,
+  .product-page,
+  .product-page * {
     visibility: visible !important;
   }
   .order-modal-backdrop {
@@ -1435,6 +1437,37 @@ td i {
   }
   .order-modal .modal-head > button,
   .print-order-button {
+    display: none !important;
+  }
+  .product-page {
+    position: absolute;
+    inset: 0 auto auto 0;
+    width: 100%;
+    display: grid;
+    grid-template-columns: 48% 52%;
+    background: white;
+    color: black;
+  }
+  .product-gallery {
+    background: white;
+  }
+  .product-gallery img {
+    width: 100%;
+    height: auto;
+    max-height: 240mm;
+    object-fit: contain;
+  }
+  .product-info {
+    position: static;
+    padding: 12mm;
+  }
+  .gallery-arrow,
+  .gallery-dots,
+  .gallery-count,
+  .product-info .add,
+  .product-info .wish-btn,
+  .print-product-button,
+  .size-row button {
     display: none !important;
   }
   @page {
