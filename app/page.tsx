@@ -236,6 +236,17 @@ export default function Cairo26App({
       [darkMode, setDarkMode] = useState(true),
     [toast, setToast] = useState("");
   const [homepageLoaded, setHomepageLoaded] = useState(false);
+  const firstPixelView = useRef(true);
+  useEffect(() => {
+    if (firstPixelView.current) {
+      firstPixelView.current = false;
+      return;
+    }
+    const pixelWindow = window as typeof window & {
+      fbq?: (...args: unknown[]) => void;
+    };
+    pixelWindow.fbq?.("track", "PageView");
+  }, [view]);
   const toStoreProduct = (p: {
     id: number;
     name: string;
@@ -1421,6 +1432,13 @@ function PrivacyPolicy() {
       <p>
         We share only the information needed with service providers such as delivery,
         payment, hosting, database, and email providers. We do not sell your personal data.
+      </p>
+      <h2>ANALYTICS AND ADVERTISING</h2>
+      <p>
+        We use Meta Pixel to understand visits and interactions with our store,
+        measure advertising performance, and improve relevant advertising. Meta
+        may receive device, browser, and interaction information according to its
+        own privacy terms.
       </p>
       <h2>DATA RETENTION AND SECURITY</h2>
       <p>
